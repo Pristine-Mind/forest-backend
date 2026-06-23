@@ -1,0 +1,127 @@
+from __future__ import annotations
+
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+from apps.core.models import AbstractBaseModel, SystemConfig
+
+
+class FundAllocationRule(AbstractBaseModel):
+    forest_dev_min_percent = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0)])
+    poor_targeted_min_percent = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0)])
+    effective_from = models.DateField()
+
+    class Meta:
+        ordering = ["-effective_from"]
+        verbose_name = "Fund Allocation Rule"
+        verbose_name_plural = "Fund Allocation Rules"
+
+    def __str__(self) -> str:
+        return f"Rule from {self.effective_from}"
+
+
+class BankAccount(AbstractBaseModel):
+    bank_name = models.CharField(max_length=255)
+    account_number = models.CharField(max_length=64)
+    signatories = models.JSONField(
+        default=list,
+        help_text="List of CommitteeMember IDs who can sign on this account",
+    )
+    min_signatures_required = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        verbose_name = "Bank Account"
+        verbose_name_plural = "Bank Accounts"
+
+    def __str__(self) -> str:
+        return f"{self.bank_name} - {self.account_number}"
+
+    def clean(self):
+        super().clean()
+        from apps.governance.models import CommitteeMember
+
+        if not isinstance(self.signatories, list):
+            raise ValidationError({"signatories": "Signatories must be a list of committee member IDs."})
+
+        women_count = CommitteeMember.objects.filter(pk__in=self.signatories, gender__iexact="female").count()
+        if women_count < 1:
+            raise ValidationError({"signatories": "At least one signatory must be a woman, per the bylaws."})
+
+
+class CashTransaction(AbstractBaseModel):
+    class Type(models.TextChoices):
+        INCOME = "income", _("Income")
+        EXPENSE = "expense", _("Expense")
+
+    type = models.CharField(max_length=16, choices=Type.choices)
+    source_or_purpose = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    requires_committee_approval = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        "core.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_cash_transactions",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Cash Transaction"
+        verbose_name_plural = "Cash Transactions"
+
+    def __str__(self) -> str:
+        return f"{self.type} - {self.source_or_purpose} - {self.amount}"
+
+    def save(self, *args, **kwargs):
+        config = SystemConfig.get()
+        self.requires_committee_approval = self.amount > min(
+            config.cash_chair_approval_limit, config.cash_treasurer_approval_limit
+        )
+        super().save(*args, **kwargs)
+
+
+class Audit(AbstractBaseModel):
+    class Tier(models.TextChoices):
+        INTERNAL = "internal", _("Internal")
+        EXTERNAL = "external", _("External")
+
+    fiscal_year = models.CharField(max_length=16)
+    total_income = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
+    audit_tier = models.CharField(max_length=16, choices=Tier.choices, blank=True)
+    auditor_name = models.CharField(max_length=255)
+    findings = models.TextField(blank=True)
+    irregularities_recovered = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0, validators=[MinValueValidator(0)]
+    )
+
+    class Meta:
+        ordering = ["-fiscal_year"]
+        verbose_name = "Audit"
+        verbose_name_plural = "Audits"
+
+    def __str__(self) -> str:
+        return f"Audit {self.fiscal_year} - {self.audit_tier}"
+
+    def save(self, *args, **kwargs):
+        config = SystemConfig.get()
+        self.audit_tier = self.Tier.EXTERNAL if self.total_income > config.audit_external_threshold else self.Tier.INTERNAL
+        super().save(*args, **kwargs)
+
+
+class PublicAudit(AbstractBaseModel):
+    fiscal_year = models.CharField(max_length=16)
+    presentation_date = models.DateField()
+    assembly_approval = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-fiscal_year"]
+        verbose_name = "Public Audit"
+        verbose_name_plural = "Public Audits"
+
+    def __str__(self) -> str:
+        return f"Public Audit {self.fiscal_year}"

@@ -48,6 +48,9 @@ env = environ.Env(
     BREVO_API_KEY=str,
 )
 
+# Read environment variables from the .env file if present
+env.read_env(os.path.join(BASE_DIR, ".env"))
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -68,10 +71,22 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django.contrib.gis",
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",
+    "django_filters",
+    "apps.core",
+    "apps.members",
+    "apps.forest",
+    "apps.harvest",
+    "apps.inventory",
+    "apps.visitors",
+    "apps.billing",
+    "apps.governance",
+    "apps.fund",
+    "apps.livelihood",
+    "apps.offense",
+    "apps.reports",
 ]
 
 MIDDLEWARE = [
@@ -114,7 +129,7 @@ WSGI_APPLICATION = "main.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.contrib.gis.db.backends.postgis",
+        "ENGINE": "django.db.backends.postgresql",
         "HOST": env("DB_HOST"),
         "PORT": env("DB_PORT"),
         "NAME": env("DB_NAME"),
@@ -180,7 +195,7 @@ MEDIA_ROOT = env("DJANGO_MEDIA_ROOT")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom User Model
-# AUTH_USER_MODEL = "user.User"
+AUTH_USER_MODEL = "core.User"
 
 # Google OAuth2 Configuration
 GOOGLE_OAUTH2_CLIENT_ID = env("GOOGLE_OAUTH2_CLIENT_ID", default="")
