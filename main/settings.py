@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.members",
     "apps.forest",
+    "apps.forms",
     "apps.harvest",
     "apps.inventory",
     "apps.visitors",

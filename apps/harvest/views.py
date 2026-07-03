@@ -33,9 +33,9 @@ class HarvestRequestViewSet(viewsets.ModelViewSet):
             member = getattr(user, "member_profile", None)
             if member is None:
                 raise PermissionDenied("User is not linked to a member profile.")
-            serializer.save(member=member, user=user)
+            serializer.save(member=member)
         else:
-            serializer.save(user=user)
+            serializer.save()
 
     @action(detail=True, methods=["post"], permission_classes=[IsCommitteeOfficer])
     def approve(self, request, pk=None):

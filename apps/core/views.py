@@ -1,11 +1,13 @@
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.models import SystemConfig, User
 from apps.core.permissions import IsCommitteeOfficer
 from apps.core.serializers import (
+    LoginSerializer,
     SystemConfigSerializer,
     UserCreateSerializer,
     UserSerializer,
@@ -36,3 +38,38 @@ class SystemConfigViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, vi
 
     def get_object(self):
         return SystemConfig.get()
+
+
+class AuthViewSet(viewsets.ViewSet):
+    """Authentication endpoints for login and logout."""
+
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[AllowAny],
+        authentication_classes=[],
+    )
+    def login(self, request):
+        """Authenticate a user and return an auth token plus user details."""
+        serializer = LoginSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        token, _ = Token.objects.get_or_create(user=user)
+        user_serializer = UserSerializer(user)
+        return Response(
+            {"token": token.key, "user": user_serializer.data},
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[IsAuthenticated],
+    )
+    def logout(self, request):
+        """Delete the user's auth token, invalidating API access."""
+        Token.objects.filter(user=request.user).delete()
+        return Response(
+            {"detail": "Successfully logged out."},
+            status=status.HTTP_200_OK,
+        )

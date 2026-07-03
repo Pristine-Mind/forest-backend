@@ -117,7 +117,8 @@ def test_process_membership_renewal_cancels_after_threshold(member, committee_us
 
 
 @pytest.mark.django_db
-def test_record_visitor_entry_creates_receipt_when_not_waived(committee_user, visitor_fee_rate):
+def test_record_visitor_entry_creates_receipt_and_fee_collection_when_not_waived(committee_user, visitor_fee_rate):
+    from apps.billing.models import FeeCollection
     from apps.visitors.models import VisitorEntry
 
     entry = record_visitor_entry(
@@ -133,6 +134,12 @@ def test_record_visitor_entry_creates_receipt_when_not_waived(committee_user, vi
 
     assert entry.receipt_no is not None
     assert entry.total_amount > 0
+    assert FeeCollection.objects.filter(
+        fee_type=FeeCollection.FeeType.VISITOR_ENTRY,
+        amount=entry.total_amount,
+        amount_paid=entry.total_amount,
+        receipt_no=entry.receipt_no,
+    ).exists()
 
 
 @pytest.mark.django_db

@@ -1,0 +1,86 @@
+[
+  {
+    "block_id": 2,
+    "species_id": 2,
+    "wood_volume": 384329,
+    "firewood_chatta": 10191
+  },
+  {
+    "block_id": 3,
+    "species_id": 2,
+    "wood_volume": 61670,
+    "firewood_chatta": 2109
+  },
+  {
+    "block_id": 2,
+    "species_id": 3,
+    "wood_volume": 136867,
+    "firewood_chatta": 8157
+  },
+  {
+    "block_id": 3,
+    "species_id": 3,
+    "wood_volume": 361569,
+    "firewood_chatta": 9109
+  },
+  {
+    "block_id": 2,
+    "species_id": 8,
+    "wood_volume": 36543,
+    "firewood_chatta": 175
+  },
+  {
+    "block_id": 3,
+    "species_id": 8,
+    "wood_volume": 17207,
+    "firewood_chatta": 312
+  },
+  {
+    "block_id": 2,
+    "species_id": 5,
+    "wood_volume": 123700,
+    "firewood_chatta": 8157
+  },
+  {
+    "block_id": 3,
+    "species_id": 5,
+    "wood_volume": 0,
+    "firewood_chatta": 0
+  },
+  {
+    "block_id": 2,
+    "species_id": 4,
+    "wood_volume": 0,
+    "firewood_chatta": 0
+  },
+  {
+    "block_id": 3,
+    "species_id": 4,
+    "wood_volume": 113796,
+    "firewood_chatta": 324
+  },
+  {
+    "block_id": 2,
+    "species_id": 10,
+    "wood_volume": 54805,
+    "firewood_chatta": 1563
+  },
+  {
+    "block_id": 3,
+    "species_id": 10,
+    "wood_volume": 115768,
+    "firewood_chatta": 345
+  },
+  {
+    "block_id": 2,
+    "species_id": 7,
+    "wood_volume": 764240,
+    "firewood_chatta": 28143
+  },
+  {
+    "block_id": 3,
+    "species_id": 7,
+    "wood_volume": 668711,
+    "firewood_chatta": 12199
+  }
+]

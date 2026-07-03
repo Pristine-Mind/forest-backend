@@ -1,0 +1,32 @@
+[
+  {
+    "sn": 1,
+    "nepali_name": "बँदेल",
+    "local_name": "",
+    "scientific_name": "Sus scrofa"
+  },
+  {
+    "sn": 2,
+    "nepali_name": "खरायो",
+    "local_name": "",
+    "scientific_name": "Caprolagus spp."
+  },
+  {
+    "sn": 3,
+    "nepali_name": "बाँदर",
+    "local_name": "",
+    "scientific_name": "Macaca spp."
+  },
+  {
+    "sn": 4,
+    "nepali_name": "दुम्सी",
+    "local_name": "",
+    "scientific_name": "Hystrix spp."
+  },
+  {
+    "sn": 5,
+    "nepali_name": "स्याल",
+    "local_name": "",
+    "scientific_name": "Canis aureus"
+  }
+]

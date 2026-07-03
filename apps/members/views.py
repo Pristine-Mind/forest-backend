@@ -42,10 +42,10 @@ class HouseholdViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(_member_filter_for_user(user))
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save()
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save()
 
 
 class MemberViewSet(viewsets.ModelViewSet):

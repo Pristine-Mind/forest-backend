@@ -27,6 +27,13 @@ class StockTransactionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
     filterset_fields = ["stock", "transaction_type", "reference_type"]
 
+    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    def record_adjustment(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        transaction = serializer.save(reference_type=StockTransaction.ReferenceType.ADJUSTMENT, reference_id=0)
+        return Response(self.get_serializer(transaction).data, status=status.HTTP_201_CREATED)
+
 
 class PriceRateViewSet(viewsets.ModelViewSet):
     queryset = PriceRate.objects.select_related("species")
@@ -48,6 +55,7 @@ class SaleViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        print(serializer.errors)
         try:
             sale = record_sale(serializer.validated_data, request.user)
         except ValueError as exc:

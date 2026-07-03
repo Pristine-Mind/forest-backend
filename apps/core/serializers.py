@@ -1,6 +1,41 @@
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from apps.core.models import SystemConfig, User
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        if email and password:
+            user = authenticate(
+                request=self.context.get("request"),
+                username=email,
+                password=password,
+            )
+            if not user:
+                raise serializers.ValidationError(
+                    "Unable to log in with provided credentials.",
+                    code="authorization",
+                )
+            if not user.is_active:
+                raise serializers.ValidationError(
+                    "User account is disabled.",
+                    code="authorization",
+                )
+        else:
+            raise serializers.ValidationError(
+                'Must include "email" and "password".',
+                code="authorization",
+            )
+
+        attrs["user"] = user
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):

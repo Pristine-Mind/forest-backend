@@ -40,7 +40,7 @@ class MemberSerializer(serializers.ModelSerializer):
             "id",
             "household",
             "household_name",
-            "user",
+            # "user",
             "user_email",
             "full_name",
             "citizenship_no",
@@ -62,6 +62,8 @@ class MemberListSerializer(MemberSerializer):
             "citizenship_no",
             "membership_status",
             "household_name",
+            "membership_type",
+            "date_joined",
         ]
 
 

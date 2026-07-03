@@ -116,6 +116,8 @@ class Sale(AbstractBaseModel):
         max_digits=12,
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.01"))],
+        null=True,
+        blank=True,
         help_text="Auto-filled from price rate; editable by committee with audit note",
     )
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)

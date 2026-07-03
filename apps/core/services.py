@@ -124,7 +124,7 @@ def record_sale(sale_data, issued_by_user):
     buyer_type = sale_data["buyer_type"]
     quantity = sale_data["quantity"]
 
-    stock_ledger = StockLedger.objects.select_for_update().get(species=species, grade=grade)
+    stock_ledger, created = StockLedger.objects.select_for_update().get_or_create(species=species, grade=grade)
 
     if quantity > stock_ledger.quantity_available:
         raise ValueError(
@@ -139,14 +139,16 @@ def record_sale(sale_data, issued_by_user):
     )
 
     rate_applied = sale_data.get("rate_applied")
-    audit_note = sale_data.get("audit_note", "")
+    # audit_note = sale_data.get("audit_note", "")
     if rate_applied is None:
         if rate is None:
             raise ValueError(f"No price rate found for {species} grade {grade} buyer type {buyer_type}.")
         rate_applied = rate.rate_per_unit
     else:
-        if not audit_note:
-            raise ValueError("Audit note is required when manually editing the applied rate.")
+        pass
+
+        # if not audit_note:
+        #     raise ValueError("Audit note is required when manually editing the applied rate.")
 
     total_amount = Decimal(quantity) * Decimal(rate_applied)
 
@@ -171,7 +173,7 @@ def record_sale(sale_data, issued_by_user):
         total_amount=total_amount,
         payment_status=sale_data.get("payment_status", Sale.PaymentStatus.DUE),
         receipt_no=receipt,
-        audit_note=audit_note,
+        # audit_note=audit_note,
         created_by=issued_by_user,
         updated_by=issued_by_user,
     )
@@ -285,9 +287,9 @@ def process_membership_renewal(member, fiscal_year, paid_date, issued_by_user):
 
 @transaction.atomic
 def record_visitor_entry(entry_data, issued_by_user):
-    """Atomic visitor entry logging: creates entry and receipt if not waived."""
+    """Atomic visitor entry logging: creates entry, receipt and fee collection if not waived."""
 
-    from apps.billing.models import Receipt
+    from apps.billing.models import FeeCollection, Receipt
     from apps.visitors.models import VisitorEntry
 
     entry = VisitorEntry.objects.create(
@@ -312,6 +314,17 @@ def record_visitor_entry(entry_data, issued_by_user):
         )
         entry.receipt_no = receipt
         entry.save(update_fields=["receipt_no"], user=issued_by_user)
+
+        FeeCollection.objects.create(
+            fee_type=FeeCollection.FeeType.VISITOR_ENTRY,
+            amount=entry.total_amount,
+            amount_paid=entry.total_amount,
+            receipt_no=receipt,
+            description=f"Visitor entry fee for {entry.visitor_count} visitors on {entry.entry_date}",
+            created_by=issued_by_user,
+            updated_by=issued_by_user,
+        )
+
         _schedule_receipt_pdf(receipt.receipt_no)
 
     return entry

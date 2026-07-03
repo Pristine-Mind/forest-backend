@@ -58,6 +58,13 @@ class SaleSerializer(serializers.ModelSerializer):
     species_name = serializers.CharField(source="species.species_name", read_only=True)
     member_name = serializers.CharField(source="member.full_name", read_only=True, allow_null=True)
     total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    rate_applied = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+        help_text="Auto-filled from price rate if not provided. Required if manually overriding.",
+    )
 
     class Meta:
         model = Sale
@@ -84,8 +91,19 @@ class SaleSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         buyer_type = attrs.get("buyer_type")
         member = attrs.get("member")
+        rate_applied = attrs.get("rate_applied")
+        # audit_note = attrs.get("audit_note", "")
+
+        # Validate member requirement
         if buyer_type == Sale.BuyerType.MEMBER and not member:
             raise serializers.ValidationError({"member": "Member is required when buyer type is member."})
         if buyer_type == Sale.BuyerType.OUTSIDER and member:
             raise serializers.ValidationError({"member": "Member must be blank when buyer type is outsider."})
+
+        # # Validate audit_note when rate is manually set
+        # if rate_applied is not None and not audit_note:
+        #     raise serializers.ValidationError({
+        #         "audit_note": "Audit note is required when manually setting the rate."
+        #     })
+
         return attrs

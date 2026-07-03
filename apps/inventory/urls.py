@@ -10,7 +10,7 @@ from apps.inventory.views import (
 
 router = DefaultRouter()
 router.register(r"ledgers", StockLedgerViewSet)
-router.register(r"transactions", StockTransactionViewSet)
+router.register(r"stock-transactions", StockTransactionViewSet)
 router.register(r"price-rates", PriceRateViewSet)
 router.register(r"sales", SaleViewSet)
 

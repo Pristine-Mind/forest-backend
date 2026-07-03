@@ -47,6 +47,7 @@ class FeeCollection(AbstractBaseModel):
         MEMBERSHIP = "membership", _("Membership")
         RENEWAL = "renewal", _("Renewal")
         ROYALTY = "royalty", _("Royalty")
+        VISITOR_ENTRY = "visitor_entry", _("Visitor Entry")
         OTHER = "other", _("Other")
 
     class PaymentStatus(models.TextChoices):
