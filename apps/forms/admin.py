@@ -4,6 +4,8 @@ from django.utils.html import format_html
 from .models import (
     CuttingRegister,
     CuttingRegisterItem,
+    FellingRegister,
+    FellingRegisterEntry,
     TreeSurveyForm,
     TreeSurveyFormItem,
 )
@@ -268,3 +270,34 @@ class CuttingRegisterItemAdmin(admin.ModelAdmin):
         ),
         ("Metadata", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+
+class FellingRegisterEntryInline(admin.TabularInline):
+    model = FellingRegisterEntry
+    extra = 1
+    fields = (
+        "entry_date",
+        "entry_time",
+        "rawana_number",
+        "golia_number",
+        "species",
+        "measurement_size",
+        "volume_cubic_feet",
+        "firewood_chatta",
+        "remarks",
+    )
+
+
+@admin.register(FellingRegister)
+class FellingRegisterAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "felling_location",
+        "district",
+        "cutting_agency_name",
+        "tree_count",
+        "created_at",
+    )
+    search_fields = ("felling_location", "district", "cutting_agency_name")
+    list_filter = ("district",)
+    inlines = [FellingRegisterEntryInline]

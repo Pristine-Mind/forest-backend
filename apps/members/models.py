@@ -94,6 +94,7 @@ class Member(AbstractBaseModel):
         default=MembershipStatus.ACTIVE,
     )
     date_joined = models.DateField()
+    membership_photo = models.FileField(upload_to="membership_photos/", blank=True, null=True)
 
     class Meta:
         ordering = ["full_name"]

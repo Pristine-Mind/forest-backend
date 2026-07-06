@@ -9,6 +9,7 @@ from apps.core.permissions import (
 )
 from apps.forest.models import (
     ForestBlock,
+    ForestBoundary,
     HarvestLog,
     OperationalPlan,
     PoleCountRegister,
@@ -21,6 +22,7 @@ from apps.forest.models import (
 from apps.forest.serializers import (
     BlockSummarySerializer,
     ForestBlockSerializer,
+    ForestBoundarySerializer,
     HarvestLogSerializer,
     OperationalPlanSerializer,
     PlotSummarySerializer,
@@ -68,7 +70,7 @@ class TreeCountRegisterViewSet(viewsets.ModelViewSet):
     Provides CRUD operations and summary endpoints.
     """
 
-    queryset = TreeCountRegister.objects.select_related("block", "operational_plan", "species").all()
+    queryset = TreeCountRegister.objects.select_related("operational_plan", "species").all()
     serializer_class = TreeCountRegisterSerializer
     permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
 
@@ -837,3 +839,25 @@ class PoleCountRegisterViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(trees, many=True)
         return Response(serializer.data)
+
+
+class ForestBoundaryViewSet(viewsets.ModelViewSet):
+    queryset = ForestBoundary.objects.select_related("forest_block")
+    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    filterset_fields = ["boundary_type", "forest_block"]
+
+    def get_serializer_class(self):
+        return ForestBoundarySerializer
+
+    @action(detail=False, methods=["get"])
+    def geojson(self, request):
+        """
+        Returns a GeoJSON FeatureCollection of all boundaries.
+        """
+        qs = self.get_queryset()
+        return Response(
+            {
+                "type": "FeatureCollection",
+                "features": [obj.as_geojson_feature() for obj in qs],
+            }
+        )

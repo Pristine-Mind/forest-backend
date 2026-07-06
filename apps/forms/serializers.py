@@ -1,8 +1,14 @@
+from datetime import datetime, date
+
 from rest_framework import serializers
 
 from .models import (
     CuttingRegister,
     CuttingRegisterItem,
+    FellingRegister,
+    FellingRegisterEntry,
+    ForestProductReceiptItem,
+    ForestProductReceipt,
     TreeSurveyForm,
     TreeSurveyFormItem,
 )
@@ -229,4 +235,161 @@ class CuttingRegisterSerializer(serializers.ModelSerializer):
             for item_data in cutting_items_data:
                 CuttingRegisterItem.objects.create(cutting_register=instance, **item_data)
 
+        return instance
+
+
+class FellingRegisterEntrySerializer(serializers.ModelSerializer):
+    species_name = serializers.CharField(source="species.species_name", read_only=True)
+
+    class Meta:
+        model = FellingRegisterEntry
+        fields = [
+            "id",
+            "register",
+            "entry_date",
+            "entry_time",
+            "rawana_number",
+            "golia_number",
+            "species",
+            "species_name",
+            "measurement_size",
+            "volume_cubic_feet",
+            "firewood_chatta",
+            "remarks",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+        extra_kwargs = {"register": {"required": False}}
+
+
+class FellingRegisterSerializer(serializers.ModelSerializer):
+
+    entries = FellingRegisterEntrySerializer(many=True, required=False)
+
+    class Meta:
+        model = FellingRegister
+        fields = [
+            "id",
+            "area",
+            "district",
+            "sub_division",
+            "block_name_and_type",
+            "felling_location",
+            "cutting_agency_name",
+            "tree_count",
+            "felling_sawing_deadline",
+            "dispatch_deadline",
+            "cfug_rep_name",
+            "cfug_rep_position",
+            "cfug_rep_signed_date",
+            "forest_rep_name",
+            "forest_rep_position",
+            "forest_rep_signed_date",
+            "entries",
+            "created_by",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_by", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        entries_data = validated_data.pop("entries", [])
+        register = FellingRegister.objects.create(**validated_data)
+        for entry_data in entries_data:
+            FellingRegisterEntry.objects.create(register=register, **entry_data)
+        return register
+
+    def update(self, instance, validated_data):
+        entries_data = validated_data.pop("entries", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if entries_data is not None:
+            instance.entries.all().delete()
+            for entry_data in entries_data:
+                FellingRegisterEntry.objects.create(register=instance, **entry_data)
+
+        return instance
+
+
+class ForestProductReceiptItemSerializer(serializers.ModelSerializer):
+    total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = ForestProductReceiptItem
+        fields = [
+            "id",
+            "product_name",
+            "grade",
+            "unit",
+            "quantity",
+            "rate_per_unit",
+            "total_amount",
+            "remarks",
+        ]
+        extra_kwargs = {
+            "rate_per_unit": {"required": True},
+            "quantity": {"required": True},
+            "unit": {"required": True},
+            "product_name": {"required": True},
+        }
+
+
+class ForestProductReceiptSerializer(serializers.ModelSerializer):
+    items = ForestProductReceiptItemSerializer(many=True, required=True)
+    grand_total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = ForestProductReceipt
+        fields = [
+            "id",
+            "receipt_no",
+            "cfug_registration_no",
+            "buyer_name",
+            "buyer_address",
+            "issue_date",
+            "sales",
+            "receiver_name",
+            "receiver_date",
+            "issuer_name",
+            "issuer_position",
+            "issuer_date",
+            "items",
+            "grand_total",
+            "created_at",
+            "updated_at",
+        ]
+        extra_kwargs = {
+            "issue_date": {"required": True},
+            "buyer_name": {"required": True},
+            "receipt_no": {"required": True},
+        }
+
+    def create(self, validated_data):
+        items_data = validated_data.pop("items")
+        sales = validated_data.pop("sales", [])
+        # Set issue_date to current date if not provided
+        if "issue_date" not in validated_data or validated_data["issue_date"] is None:
+            validated_data["issue_date"] = date.today()
+        receipt = ForestProductReceipt.objects.create(**validated_data)
+        if sales:
+            receipt.sales.set(sales)
+        for item_data in items_data:
+            ForestProductReceiptItem.objects.create(receipt=receipt, **item_data)
+        return receipt
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop("items", None)
+        sales = validated_data.pop("sales", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if sales is not None:
+            instance.sales.set(sales)
+        if items_data is not None:
+            instance.items.all().delete()
+            for item_data in items_data:
+                ForestProductReceiptItem.objects.create(receipt=instance, **item_data)
         return instance

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from apps.forest.models import (
     ForestBlock,
+    ForestBoundary,
     HarvestLog,
     OperationalPlan,
     PoleCountRegister,
@@ -383,4 +384,49 @@ class PoleCountRegisterSerializer(serializers.ModelSerializer):
         """Validate tree number"""
         if value is not None and value <= 0:
             raise serializers.ValidationError("Tree number must be greater than 0.")
+        return value
+
+
+class ForestBoundarySerializer(serializers.ModelSerializer):
+    geojson_feature = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ForestBoundary
+        fields = [
+            "id",
+            "name",
+            "boundary_type",
+            "forest_block",
+            "coordinates",
+            "description",
+            "source_notes",
+            "geojson_feature",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_geojson_feature(self, obj) -> dict:
+        return obj.as_geojson_feature()
+
+
+class ForestBoundaryInputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ForestBoundary
+        fields = [
+            "name",
+            "boundary_type",
+            "forest_block",
+            "coordinates",
+            "description",
+            "source_notes",
+        ]
+
+    def validate_coordinates(self, value):
+        if not isinstance(value, list) or len(value) < 4:
+            raise serializers.ValidationError("coordinates must be a list of at least 4 [lng, lat] pairs.")
+        for point in value:
+            if not isinstance(point, list) or len(point) != 2:
+                raise serializers.ValidationError("Each coordinate must be a [longitude, latitude] pair.")
+        if value[0] != value[-1]:
+            raise serializers.ValidationError("Polygon ring must be closed — first and last coordinate must be the same.")
         return value

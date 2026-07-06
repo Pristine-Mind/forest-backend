@@ -16,6 +16,8 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+from apps.core.permissions import IsAuthenticatedReadOnly
+from apps.core.permissions import IsAuthenticatedReadOnly
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -24,12 +26,18 @@ from rest_framework.response import Response
 from .models import (
     CuttingRegister,
     CuttingRegisterItem,
+    FellingRegister,
+    FellingRegisterEntry,
+    ForestProductReceipt,
     TreeSurveyForm,
     TreeSurveyFormItem,
 )
 from .serializers import (
     CuttingRegisterItemSerializer,
     CuttingRegisterSerializer,
+    FellingRegisterEntrySerializer,
+    FellingRegisterSerializer,
+    ForestProductReceiptSerializer,
     TreeSurveyFormItemSerializer,
     TreeSurveyFormSerializer,
 )
@@ -393,7 +401,6 @@ class CuttingRegisterViewSet(viewsets.ModelViewSet):
 
 
 class CuttingRegisterItemViewSet(viewsets.ModelViewSet):
-    """ViewSet for cutting register items"""
 
     queryset = CuttingRegisterItem.objects.all().select_related("species", "cutting_register")
     serializer_class = CuttingRegisterItemSerializer
@@ -401,3 +408,33 @@ class CuttingRegisterItemViewSet(viewsets.ModelViewSet):
     filterset_fields = ["cutting_register", "species"]
     search_fields = ["species__species_name", "plot_number"]
     ordering = ["cutting_register", "serial_number"]
+
+
+class FellingRegisterViewSet(viewsets.ModelViewSet):
+    queryset = FellingRegister.objects.all().prefetch_related("entries", "entries__species")
+    serializer_class = FellingRegisterSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class FellingRegisterEntryViewSet(viewsets.ModelViewSet):
+    queryset = FellingRegisterEntry.objects.all().select_related("species", "register")
+    serializer_class = FellingRegisterEntrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        register_id = self.request.query_params.get("register")
+        if register_id:
+            qs = qs.filter(register_id=register_id)
+        return qs
+
+
+class ForestProductReceiptViewSet(viewsets.ModelViewSet):
+    queryset = ForestProductReceipt.objects.prefetch_related("items", "sales")
+    serializer_class = ForestProductReceiptSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["issue_date", "buyer_name"]
+    search_fields = ["receipt_no", "buyer_name"]

@@ -57,7 +57,18 @@ class CashTransaction(AbstractBaseModel):
         INCOME = "income", _("Income")
         EXPENSE = "expense", _("Expense")
 
+    class PaymentType(models.TextChoices):
+        CASH = "cash", _("Cash")
+        CHEQUE = "cheque", _("Cheque")
+        DIGITAL_WALLET = "digital_wallet", _("Digital Wallet")
+
     type = models.CharField(max_length=16, choices=Type.choices)
+    payment_type = models.CharField(
+        max_length=16,
+        choices=PaymentType.choices,
+        default=PaymentType.CASH,
+        help_text="Payment method used for this transaction",
+    )
     source_or_purpose = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
     requires_committee_approval = models.BooleanField(default=False)
@@ -68,6 +79,18 @@ class CashTransaction(AbstractBaseModel):
         blank=True,
         related_name="approved_cash_transactions",
     )
+    cheque_number = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="Required if payment type is cheque",
+    )
+    cheque_bank_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Bank name for cheque payment",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -76,6 +99,14 @@ class CashTransaction(AbstractBaseModel):
 
     def __str__(self) -> str:
         return f"{self.type} - {self.source_or_purpose} - {self.amount}"
+
+    def clean(self):
+        super().clean()
+        if self.payment_type == self.PaymentType.CHEQUE:
+            if not self.cheque_number:
+                raise ValidationError({"cheque_number": "Cheque number is required when payment type is cheque."})
+            if not self.cheque_bank_name:
+                raise ValidationError({"cheque_bank_name": "Bank name is required when payment type is cheque."})
 
     def save(self, *args, **kwargs):
         config = SystemConfig.get()

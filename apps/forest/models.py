@@ -670,3 +670,55 @@ class PoleCountRegister(AbstractBaseModel):
             "average_height": trees.aggregate(models.Avg("height_m"))["height_m__avg"] or 0,
             "average_girth": trees.aggregate(models.Avg("girth_cm"))["girth_cm__avg"] or 0,
         }
+
+
+class ForestBoundary(AbstractBaseModel):
+
+    class BoundaryType(models.TextChoices):
+        BLOCK = "block", "Block"
+        ZONE = "zone", "Zone"
+        BUFFER = "buffer", "Buffer Zone"
+        OTHER = "other", "Other"
+
+    name = models.CharField(max_length=255)
+    boundary_type = models.CharField(
+        max_length=16,
+        choices=BoundaryType.choices,
+        default=BoundaryType.BLOCK,
+    )
+    forest_block = models.OneToOneField(
+        "ForestBlock",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="boundary",
+    )
+    # Flat coordinate storage — list of [longitude, latitude] pairs
+    coordinates = models.JSONField(help_text="List of [longitude, latitude] pairs forming the polygon ring")
+    description = models.TextField(blank=True)
+    source_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Forest Boundary"
+        verbose_name_plural = "Forest Boundaries"
+
+    def __str__(self) -> str:
+        return self.name
+
+    def as_geojson_feature(self) -> dict:
+        """Returns a GeoJSON Feature ready for Leaflet."""
+        return {
+            "type": "Feature",
+            "properties": {
+                "id": self.id,
+                "name": self.name,
+                "boundary_type": self.boundary_type,
+                "forest_block_id": self.forest_block_id,
+                "description": self.description,
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [self.coordinates],
+            },
+        }

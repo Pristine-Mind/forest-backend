@@ -1,8 +1,10 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from decimal import Decimal
 
 from apps.core.models import AbstractBaseModel
 from apps.forest.models import ForestBlock, OperationalPlan, Species
+from apps.inventory.models import Sale
 
 
 class TreeSurveyForm(AbstractBaseModel):
@@ -206,3 +208,169 @@ class CuttingRegisterItem(AbstractBaseModel):
 
     def __str__(self) -> str:
         return f"{self.cutting_register.form_number} - #{self.serial_number} - {self.species.species_name}"
+
+
+class FellingRegister(AbstractBaseModel):
+    """
+    Header of a single Anusuchi-8 register: site/agency details, deadlines,
+    and the two signatories (CFUG representative + Forest Office representative).
+    """
+
+    # क्षेत्र / जिल्ला / सब-डिभिजन / खण्ड
+    area = models.CharField("Area (क्षेत्र)", max_length=255, blank=True)
+    district = models.CharField("District (जिल्ला)", max_length=255, blank=True)
+    sub_division = models.CharField("Sub-division (सब-डिभिजन)", max_length=255, blank=True)
+    block_name_and_type = models.CharField("Block/Plot name & type (खण्ड/प्लटको नाम र किसिम)", max_length=255, blank=True)
+    felling_location = models.CharField("Felling location (घाटगद्दीको स्थान)", max_length=255, blank=True)
+
+    # कटान गर्ने निकायको विवरण
+    cutting_agency_name = models.CharField("Cutting agency name (कटान गर्ने निकायको नाम)", max_length=255, blank=True)
+    tree_count = models.PositiveIntegerField("Tree count (रुख संख्या)", null=True, blank=True)
+    felling_sawing_deadline = models.DateField("Felling/sawing deadline (कटान चिरान म्याद)", null=True, blank=True)
+    dispatch_deadline = models.DateField("Dispatch deadline (निकासी म्याद)", null=True, blank=True)
+
+    # सामुदायिक वनको प्रतिनिधि (CFUG representative)
+    cfug_rep_name = models.CharField("CFUG rep. name (नाम)", max_length=255, blank=True)
+    cfug_rep_position = models.CharField("CFUG rep. position (पद)", max_length=255, blank=True)
+    cfug_rep_signed_date = models.DateField("CFUG rep. signed date (मिति)", null=True, blank=True)
+
+    # वन प्रतिनिधि (Forest Office representative)
+    forest_rep_name = models.CharField("Forest rep. name (नाम)", max_length=255, blank=True)
+    forest_rep_position = models.CharField("Forest rep. position (पद)", max_length=255, blank=True)
+    forest_rep_signed_date = models.DateField("Forest rep. signed date (मिति)", null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Felling Register (Anusuchi-8)"
+        verbose_name_plural = "Felling Registers (Anusuchi-8)"
+
+    def __str__(self):
+        return f"Felling Register #{self.pk} — {self.felling_location or self.block_name_and_type or 'Untitled'}"
+
+
+class FellingRegisterEntry(AbstractBaseModel):
+    """
+    One row of the घाटगद्दी/कटान table: a single tree/log/lot that was
+    measured and recorded on a given date.
+    """
+
+    register = models.ForeignKey(FellingRegister, on_delete=models.CASCADE, related_name="entries")
+
+    entry_date = models.DateField("Date (मिति)", null=True, blank=True)
+    entry_time = models.TimeField("Time (समय)", null=True, blank=True)
+    rawana_number = models.CharField("Rawana / transit permit no. (रमाना नं.)", max_length=100, blank=True)
+    golia_number = models.CharField("Log / golia no. (गोलिया नं.)", max_length=100, blank=True)
+    species = models.ForeignKey(
+        Species,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="felling_register_entries",
+    )
+    measurement_size = models.CharField("Measurement / size (नाप साइज)", max_length=255, blank=True)
+    volume_cubic_feet = models.DecimalField(
+        "Volume in cu.ft. (आयतन क्यू.फि.)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    firewood_chatta = models.DecimalField(
+        "Firewood in chatta (दाउरा चट्टा)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    remarks = models.TextField("Remarks (कैफियत)", blank=True)
+
+    class Meta:
+        ordering = ["entry_date", "entry_time", "id"]
+        verbose_name = "Felling Register Entry"
+        verbose_name_plural = "Felling Register Entries"
+
+    def __str__(self):
+        return f"Entry #{self.pk} for register #{self.register_id}"
+
+
+class ForestProductReceipt(AbstractBaseModel):
+    """
+    अनुसुचि-१० — Forest Product Sales Distribution Receipt
+    Forest Regulation 2079, Rule 49, Sub-rule (1) and (3)
+    """
+
+    # Header
+    receipt_no = models.CharField(max_length=64, unique=True)
+    cfug_registration_no = models.CharField(max_length=64, blank=True, help_text="उपभोक्ता समूहको दर्ता नं.")
+    buyer_name = models.CharField(max_length=255, help_text="श्री — recipient's full name")
+    buyer_address = models.CharField(max_length=255, blank=True)
+    issue_date = models.DateField()
+
+    # Optional FK to your existing Sale records
+    # One receipt can consolidate multiple sales
+    sales = models.ManyToManyField(
+        Sale,
+        blank=True,
+        related_name="product_receipts",
+    )
+
+    # Footer — receiver (रांसद बुभ्फ लिनेको)
+    receiver_name = models.CharField(max_length=255, blank=True)
+    receiver_date = models.DateField(null=True, blank=True)
+
+    # Footer — issuer (रांसद दिनेको)
+    issuer_name = models.CharField(max_length=255, blank=True)
+    issuer_position = models.CharField(max_length=128, blank=True)
+    issuer_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-issue_date", "-receipt_no"]
+        verbose_name = "Forest Product Receipt"
+        verbose_name_plural = "Forest Product Receipts"
+
+    def __str__(self) -> str:
+        return f"Receipt {self.receipt_no} — {self.buyer_name}"
+
+    @property
+    def grand_total(self):
+        from django.db.models import Sum
+
+        result = self.items.aggregate(total=Sum("total_amount"))
+        return result["total"] or 0
+
+
+class ForestProductReceiptItem(AbstractBaseModel):
+    """
+    One row in the receipt table.
+    """
+
+    receipt = models.ForeignKey(
+        ForestProductReceipt,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    # वनपैदावारको नाम र जात
+    product_name = models.CharField(max_length=255)
+    grade = models.CharField(max_length=64, blank=True)
+    # ईकाई
+    unit = models.CharField(max_length=32)
+    # परिमाण
+    quantity = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    # Rate used (for audit; not shown on receipt)
+    rate_per_unit = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    # कूल रकम — auto-calculated on save
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
+    # कैफियत
+    remarks = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "Receipt Item"
+        verbose_name_plural = "Receipt Items"
+
+    def __str__(self) -> str:
+        return f"{self.product_name} x {self.quantity}"
+
+    def save(self, *args, **kwargs):
+        self.total_amount = self.quantity * self.rate_per_unit
+        super().save(*args, **kwargs)
