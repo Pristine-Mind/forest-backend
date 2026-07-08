@@ -16,12 +16,12 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
-from apps.core.permissions import IsAuthenticatedReadOnly
-from apps.core.permissions import IsAuthenticatedReadOnly
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from apps.core.permissions import IsAuthenticatedReadOnly
 
 from .models import (
     CuttingRegister,

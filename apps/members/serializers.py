@@ -36,6 +36,7 @@ class HouseholdSerializer(serializers.ModelSerializer):
             "photo",
             "created_at",
             "updated_at",
+            "contact_number",
         ]
         read_only_fields = ["id", "entry_fee_due", "created_at", "updated_at"]
 
@@ -54,6 +55,7 @@ class MemberSerializer(serializers.ModelSerializer):
             # "user",
             "user_email",
             "member_photo",
+            "relation",
             "full_name",
             "created_at",
             "updated_at",
@@ -70,6 +72,7 @@ class MemberListSerializer(MemberSerializer):
             "full_name",
             "household_name",
             "member_photo",
+            "relation",
         ]
         read_only_fields = ["id", "household_name", "member_photo"]
 
