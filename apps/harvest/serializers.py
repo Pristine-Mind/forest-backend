@@ -37,7 +37,7 @@ class HarvestRequestSerializer(serializers.ModelSerializer):
         if source_type == HarvestRequest.SourceType.MEMBER_REQUESTED:
             if not member:
                 raise serializers.ValidationError({"member": "Member is required for member-requested harvests."})
-            if member.membership_status != member.MembershipStatus.ACTIVE:
+            if member.household.membership_status != member.household.MembershipStatus.ACTIVE:
                 raise serializers.ValidationError({"member": "Only active members may submit a harvest request."})
             if operation_name:
                 raise serializers.ValidationError({"operation_name": "Must be blank for member-requested harvests."})

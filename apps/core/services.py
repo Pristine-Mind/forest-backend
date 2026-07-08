@@ -214,7 +214,7 @@ def process_membership_renewal(member, fiscal_year, paid_date, issued_by_user):
     """
 
     from apps.billing.models import FeeCollection, Receipt
-    from apps.members.models import Member, MembershipRenewal
+    from apps.members.models import Household, Member, MembershipRenewal
 
     config = SystemConfig.get()
 
@@ -230,15 +230,15 @@ def process_membership_renewal(member, fiscal_year, paid_date, issued_by_user):
             years = 1
 
     if years > config.membership_cancellation_years:
-        old_status = member.membership_status
-        member.membership_status = Member.MembershipStatus.CANCELLED
-        member.save(user=issued_by_user)
+        old_status = member.household.membership_status
+        member.household.membership_status = Household.MembershipStatus.CANCELLED
+        member.household.save(user=issued_by_user)
         log_audit(
             action=AuditLog.Action.MEMBERSHIP_CANCELLATION,
             model_name="Member",
             object_id=member.pk,
             old_value=old_status,
-            new_value=member.membership_status,
+            new_value=member.household.membership_status,
             reason=f"Unrenewed for {years} years",
             user=issued_by_user,
         )

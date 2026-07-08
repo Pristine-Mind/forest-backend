@@ -1,7 +1,7 @@
 from celery import shared_task
 
 from apps.core.models import SystemConfig
-from apps.members.models import Member, MembershipRenewal
+from apps.members.models import Household, Member, MembershipRenewal
 
 
 @shared_task
@@ -14,7 +14,7 @@ def check_membership_cancellation():
     config = SystemConfig.get()
     cancelled = 0
 
-    for member in Member.objects.filter(membership_status=Member.MembershipStatus.ACTIVE):
+    for member in Member.objects.filter(household__membership_status=Household.MembershipStatus.ACTIVE):
         last = member.last_renewal()
         if last is None:
             continue
@@ -27,8 +27,8 @@ def check_membership_cancellation():
             continue
 
         if years > config.membership_cancellation_years:
-            member.membership_status = Member.MembershipStatus.CANCELLED
-            member.save()
+            member.household.membership_status = Household.MembershipStatus.CANCELLED
+            member.household.save()
             cancelled += 1
 
     return f"Cancelled {cancelled} memberships."

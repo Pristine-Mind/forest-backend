@@ -113,7 +113,7 @@ def test_process_membership_renewal_cancels_after_threshold(member, committee_us
 
     assert result is None
     member.refresh_from_db()
-    assert member.membership_status == Member.MembershipStatus.CANCELLED
+    assert member.household.membership_status == Household.MembershipStatus.CANCELLED
 
 
 @pytest.mark.django_db

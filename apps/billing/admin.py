@@ -14,5 +14,5 @@ class ReceiptAdmin(admin.ModelAdmin):
 class FeeCollectionAdmin(admin.ModelAdmin):
     list_display = ["member", "fee_type", "amount", "amount_paid", "payment_status", "receipt_no"]
     list_filter = ["fee_type", "payment_status"]
-    search_fields = ["member__full_name", "member__citizenship_no"]
+    search_fields = ["member__full_name", "member__household__citizenship_no"]
     autocomplete_fields = ["member"]

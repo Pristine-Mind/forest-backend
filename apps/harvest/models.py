@@ -53,7 +53,7 @@ class HarvestRequest(AbstractBaseModel):
         if self.source_type == self.SourceType.MEMBER_REQUESTED:
             if not self.member:
                 raise ValidationError({"member": "Member is required for member-requested harvests."})
-            if self.member.membership_status != self.member.MembershipStatus.ACTIVE:
+            if self.member.household.membership_status != self.member.household.MembershipStatus.ACTIVE:
                 raise ValidationError({"member": "Only active members may submit a harvest request."})
             if self.operation_name:
                 raise ValidationError({"operation_name": "Operation name must be blank for member-requested harvests."})

@@ -67,9 +67,13 @@ class Command(BaseCommand):
             household_head_name="Community Forest Committee",
             defaults={
                 "tole": "Committee",
-                "wealth_class": "medium",
+                "wealth_class": Household.WealthClass.MEDIUM,
                 "registration_date": datetime.now().date(),
-                "status": "active",
+                "status": Household.Status.ACTIVE,
+                "citizenship_no": "COMM-INSTITUTIONAL",
+                "membership_type": Household.MembershipType.INSTITUTIONAL,
+                "membership_status": Household.MembershipStatus.ACTIVE,
+                "date_joined": datetime.now().date(),
             },
         )
 
@@ -122,17 +126,10 @@ class Command(BaseCommand):
                 member = Member.objects.filter(full_name=full_name).first()
 
                 if not member:
-                    # Generate a simple citizenship_no based on name and index
-                    citizenship_no = f"COMM-{idx:04d}"
-
                     # Create new member
                     member = Member.objects.create(
                         household=default_household,
                         full_name=full_name,
-                        citizenship_no=citizenship_no,
-                        membership_type=Member.MembershipType.SPECIAL,
-                        membership_status=Member.MembershipStatus.ACTIVE,
-                        date_joined=today,
                     )
                     self.stdout.write(self.style.SUCCESS(f"  → Created member: {full_name} ({gender})"))
 

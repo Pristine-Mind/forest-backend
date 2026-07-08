@@ -44,4 +44,4 @@ class FeeCollectionViewSet(viewsets.ModelViewSet):
     serializer_class = FeeCollectionSerializer
     permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
     filterset_fields = ["fee_type", "payment_status", "member"]
-    search_fields = ["member__full_name", "member__citizenship_no"]
+    search_fields = ["member__full_name", "member__household__citizenship_no"]

@@ -29,6 +29,18 @@ class Household(AbstractBaseModel):
         ACTIVE = "active", _("Active")
         INACTIVE = "inactive", _("Inactive")
 
+    class MembershipType(models.TextChoices):
+        GENERAL = "general", _("General")
+        LIFETIME = "lifetime", _("Lifetime")
+        INSTITUTIONAL = "institutional", _("Institutional")
+        SPECIAL = "special", _("Special")
+        OTHER = "other", _("Other")
+
+    class MembershipStatus(models.TextChoices):
+        ACTIVE = "active", _("Active")
+        INACTIVE = "inactive", _("Inactive")
+        CANCELLED = "cancelled", _("Cancelled")
+
     household_head_name = models.CharField(max_length=255)
     tole = models.CharField(max_length=255, blank=True)
     wealth_class = models.CharField(max_length=16, choices=WealthClass.choices)
@@ -47,6 +59,15 @@ class Household(AbstractBaseModel):
     registration_date = models.DateField()
     entry_fee_type = models.CharField(max_length=16, choices=EntryFeeType.choices, default=EntryFeeType.NEW_HOUSEHOLD)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
+    citizenship_no = models.CharField(max_length=64, null=True, blank=True, unique=True)
+    membership_type = models.CharField(max_length=16, choices=MembershipType.choices, default=MembershipType.GENERAL)
+    membership_status = models.CharField(
+        max_length=16,
+        choices=MembershipStatus.choices,
+        default=MembershipStatus.ACTIVE,
+    )
+    date_joined = models.DateField(null=True, blank=True)
+    photo = models.FileField(upload_to="household_head_photos/", blank=True, null=True)
 
     class Meta:
         ordering = ["household_head_name"]
@@ -65,18 +86,6 @@ class Household(AbstractBaseModel):
 
 
 class Member(AbstractBaseModel):
-    class MembershipType(models.TextChoices):
-        GENERAL = "general", _("General")
-        LIFETIME = "lifetime", _("Lifetime")
-        INSTITUTIONAL = "institutional", _("Institutional")
-        SPECIAL = "special", _("Special")
-        OTHER = "other", _("Other")
-
-    class MembershipStatus(models.TextChoices):
-        ACTIVE = "active", _("Active")
-        INACTIVE = "inactive", _("Inactive")
-        CANCELLED = "cancelled", _("Cancelled")
-
     household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="members")
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -86,15 +95,7 @@ class Member(AbstractBaseModel):
         related_name="member_profile",
     )
     full_name = models.CharField(max_length=255)
-    citizenship_no = models.CharField(max_length=64, unique=True, db_index=True)
-    membership_type = models.CharField(max_length=16, choices=MembershipType.choices, default=MembershipType.GENERAL)
-    membership_status = models.CharField(
-        max_length=16,
-        choices=MembershipStatus.choices,
-        default=MembershipStatus.ACTIVE,
-    )
-    date_joined = models.DateField()
-    membership_photo = models.FileField(upload_to="membership_photos/", blank=True, null=True)
+    member_photo = models.FileField(upload_to="member_photos/", blank=True, null=True)
 
     class Meta:
         ordering = ["full_name"]

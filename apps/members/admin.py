@@ -20,14 +20,16 @@ class HouseholdAdmin(admin.ModelAdmin):
     list_display = [
         "household_head_name",
         "tole",
+        "citizenship_no",
         "wealth_class",
-        "population_male",
-        "population_female",
+        "membership_type",
+        "membership_status",
+        "date_joined",
         "registration_date",
         "status",
     ]
-    list_filter = ["wealth_class", "status", "education_level"]
-    search_fields = ["household_head_name", "tole"]
+    list_filter = ["wealth_class", "status", "education_level", "membership_type", "membership_status"]
+    search_fields = ["household_head_name", "tole", "citizenship_no"]
     inlines = [MemberInline]
 
 
@@ -35,14 +37,10 @@ class HouseholdAdmin(admin.ModelAdmin):
 class MemberAdmin(admin.ModelAdmin):
     list_display = [
         "full_name",
-        "citizenship_no",
         "household",
-        "membership_type",
-        "membership_status",
-        "date_joined",
     ]
-    list_filter = ["membership_type", "membership_status"]
-    search_fields = ["full_name", "citizenship_no", "household__household_head_name"]
+    list_filter = []
+    search_fields = ["full_name", "household__citizenship_no"]
     inlines = [MembershipRenewalInline]
     autocomplete_fields = ["household", "user"]
 
