@@ -37,6 +37,7 @@ class HouseholdSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "contact_number",
+            "membership_number",
         ]
         read_only_fields = ["id", "entry_fee_due", "created_at", "updated_at"]
 

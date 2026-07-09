@@ -6,7 +6,7 @@ from apps.members.models import Household, Member, MembershipRenewal
 class MemberInline(admin.TabularInline):
     model = Member
     extra = 0
-    fields = ["full_name", "citizenship_no", "membership_type", "membership_status"]
+    fields = ["full_name", "relation", "member_photo"]
 
 
 class MembershipRenewalInline(admin.TabularInline):
@@ -28,7 +28,7 @@ class HouseholdAdmin(admin.ModelAdmin):
         "registration_date",
         "status",
     ]
-    list_filter = ["wealth_class", "status", "education_level", "membership_type", "membership_status"]
+    list_filter = ["wealth_class", "status", "education_level"]
     search_fields = ["household_head_name", "tole", "citizenship_no"]
     inlines = [MemberInline]
 
