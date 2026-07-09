@@ -69,7 +69,7 @@ class Household(AbstractBaseModel):
     date_joined = models.DateField(null=True, blank=True)
     photo = models.FileField(upload_to="household_head_photos/", blank=True, null=True)
     contact_number = models.CharField(max_length=32, blank=True, null=True)
-    membership_number = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    membership_number = models.CharField(max_length=64, blank=True, null=True)
 
     class Meta:
         ordering = ["household_head_name"]
