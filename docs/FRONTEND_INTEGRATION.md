@@ -1821,7 +1821,7 @@ export default function MemberDetailPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{member.full_name}</h1>
+      <h1 className="text-2xl font-bold">{member.household_head_name}</h1>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>

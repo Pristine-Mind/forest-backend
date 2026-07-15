@@ -20,7 +20,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 class FeeCollectionSerializer(serializers.ModelSerializer):
     payment_status = serializers.CharField(read_only=True)
-    member_name = serializers.CharField(source="member.full_name", read_only=True, allow_null=True)
+    member_name = serializers.CharField(source="member.household_head_name", read_only=True, allow_null=True)
 
     class Meta:
         model = FeeCollection

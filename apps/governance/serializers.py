@@ -12,7 +12,7 @@ from apps.governance.models import (
 
 
 class CommitteeMemberSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source="member.full_name", read_only=True)
+    member_name = serializers.CharField(source="member.household_head_name", read_only=True)
     subcommittee_names = serializers.SerializerMethodField()
 
     class Meta:
@@ -31,6 +31,7 @@ class CommitteeMemberSerializer(serializers.ModelSerializer):
             "subcommittee_names",
             "created_at",
             "updated_at",
+            "photo",
         ]
 
     def get_subcommittee_names(self, obj):
@@ -38,7 +39,7 @@ class CommitteeMemberSerializer(serializers.ModelSerializer):
 
 
 class CandidateSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source="member.full_name", read_only=True)
+    member_name = serializers.CharField(source="member.household_head_name", read_only=True)
 
     class Meta:
         model = Candidate
@@ -76,7 +77,7 @@ class SubCommitteeSerializer(serializers.ModelSerializer):
 
 
 class OathRecordSerializer(serializers.ModelSerializer):
-    committee_member_name = serializers.CharField(source="committee_member.member.full_name", read_only=True)
+    committee_member_name = serializers.CharField(source="committee_member.member.household_head_name", read_only=True)
 
     class Meta:
         model = OathRecord
@@ -99,9 +100,9 @@ class NoConfidenceMotionSerializer(serializers.ModelSerializer):
 
 
 class HandoverRecordSerializer(serializers.ModelSerializer):
-    outgoing_name = serializers.CharField(source="outgoing_committee_member.member.full_name", read_only=True)
+    outgoing_name = serializers.CharField(source="outgoing_committee_member.member.household_head_name", read_only=True)
     incoming_name = serializers.CharField(
-        source="incoming_committee_member.member.full_name", read_only=True, allow_null=True
+        source="incoming_committee_member.member.household_head_name", read_only=True, allow_null=True
     )
 
     class Meta:

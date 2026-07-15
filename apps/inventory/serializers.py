@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.inventory.models import PriceRate, Sale, StockLedger, StockTransaction
+from apps.inventory.models import PriceRate, Sale, StockLedger, StockTransaction, TimberLogEntry
 
 
 class StockTransactionSerializer(serializers.ModelSerializer):
@@ -56,7 +56,7 @@ class PriceRateSerializer(serializers.ModelSerializer):
 
 class SaleSerializer(serializers.ModelSerializer):
     species_name = serializers.CharField(source="species.species_name", read_only=True)
-    member_name = serializers.CharField(source="member.full_name", read_only=True, allow_null=True)
+    member_name = serializers.CharField(source="member.household_head_name", read_only=True, allow_null=True)
     total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     rate_applied = serializers.DecimalField(
         max_digits=12,
@@ -107,3 +107,37 @@ class SaleSerializer(serializers.ModelSerializer):
         #     })
 
         return attrs
+
+
+class TimberLogEntrySerializer(serializers.ModelSerializer):
+    species_name = serializers.CharField(source="species.local_name", read_only=True)
+
+    class Meta:
+        model = TimberLogEntry
+        fields = [
+            "id",
+            "species",
+            "species_name",
+            "tree_no",
+            "tree_golia_no",
+            "golia_no",
+            "girth_inch",
+            "length_feet",
+            "volume_cubic_feet",
+            "total_pieces",
+            "timber1_pieces",
+            "timber1_diameter_1_inch",
+            "timber1_diameter_2_inch",
+            "timber2_pieces",
+            "timber2_diameter_1_inch",
+            "timber2_diameter_2_inch",
+            "avg_diameter_length_1_feet",
+            "avg_diameter_length_2_feet",
+            "sawn_volume_cft",
+            "wastage_percent",
+            "net_volume_cft",
+            "grade",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ("id", "created_at", "updated_at")

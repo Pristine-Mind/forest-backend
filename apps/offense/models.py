@@ -23,7 +23,7 @@ class OffenseReport(AbstractBaseModel):
         DISMISSED = "dismissed", _("Dismissed")
 
     reported_by = models.ForeignKey(
-        "members.Member",
+        "members.Household",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -50,7 +50,7 @@ class OffenseReport(AbstractBaseModel):
     )
     resolution = models.CharField(max_length=16, choices=Resolution.choices, null=True, blank=True)
     informant = models.ForeignKey(
-        "members.Member",
+        "members.Household",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -109,7 +109,7 @@ class HearingRecord(AbstractBaseModel):
 class InformantReward(AbstractBaseModel):
     offense = models.OneToOneField(OffenseReport, on_delete=models.CASCADE, related_name="reward")
     informant = models.ForeignKey(
-        "members.Member",
+        "members.Household",
         on_delete=models.CASCADE,
         related_name="rewards_received",
     )
@@ -126,7 +126,7 @@ class InformantReward(AbstractBaseModel):
 
 class PatrolLog(AbstractBaseModel):
     watcher = models.ForeignKey(
-        "members.Member",
+        "members.Household",
         on_delete=models.CASCADE,
         related_name="patrol_logs",
     )

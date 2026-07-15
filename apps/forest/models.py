@@ -287,14 +287,9 @@ class TreeCountRegister(AbstractBaseModel):
         ordering = ["block__block_name", "plot_number", "tree_number"]
         verbose_name = "Tree Count Register"
         verbose_name_plural = "Tree Count Register"
-        unique_together = [
-            ["block", "plot_number", "tree_number"],
-            ["block", "operational_plan", "species", "tree_number"],
-        ]
         indexes = [
             models.Index(fields=["block", "plot_number"]),
             models.Index(fields=["species"]),
-            models.Index(fields=["operational_plan"]),
         ]
 
     def __str__(self) -> str:

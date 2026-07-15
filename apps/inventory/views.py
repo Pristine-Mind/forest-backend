@@ -4,12 +4,13 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeOfficer
-from apps.inventory.models import PriceRate, Sale, StockLedger, StockTransaction
+from apps.inventory.models import PriceRate, Sale, StockLedger, StockTransaction, TimberLogEntry
 from apps.inventory.serializers import (
     PriceRateSerializer,
     SaleSerializer,
     StockLedgerSerializer,
     StockTransactionSerializer,
+    TimberLogEntrySerializer,
 )
 
 
@@ -62,3 +63,11 @@ class SaleViewSet(viewsets.ModelViewSet):
             raise ValidationError(str(exc))
 
         return Response(SaleSerializer(sale).data, status=status.HTTP_201_CREATED)
+
+
+class TimberLogEntryViewSet(viewsets.ModelViewSet):
+    queryset = TimberLogEntry.objects.select_related("species").all()
+    serializer_class = TimberLogEntrySerializer
+    filterset_fields = ["species", "grade"]
+    search_fields = ["tree_no", "tree_golia_no", "golia_no"]
+    ordering = ["-created_at"]

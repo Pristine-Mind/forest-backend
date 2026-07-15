@@ -100,10 +100,10 @@ class Sale(AbstractBaseModel):
         DUE = "due", _("Due")
         PARTIAL = "partial", _("Partial")
 
-    buyer_name = models.CharField(max_length=255)
+    buyer_name = models.CharField(max_length=255, null=True, blank=True)
     buyer_type = models.CharField(max_length=16, choices=BuyerType.choices)
     member = models.ForeignKey(
-        "members.Member",
+        "members.Household",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -151,4 +151,137 @@ class Sale(AbstractBaseModel):
 
     def save(self, *args, **kwargs):
         self.total_amount = self.quantity * self.rate_applied
+        if self.buyer_name is None or self.member is None:
+            raise ValidationError("Either buyer_name or member must be provided.")
         super().save(*args, **kwargs)
+
+
+class TimberLogEntry(models.Model):
+    class GRADE_CHOICES(models.TextChoices):
+        A = "A", _("A")
+        B = "B", _("B")
+        C = "C", _("C")
+
+    species = models.ForeignKey(
+        "forest.Species",
+        on_delete=models.CASCADE,
+        related_name="timber_log_entries",
+    )
+    tree_no = models.CharField(
+        max_length=20,
+        verbose_name="Tree No.",
+        help_text="रुख नं.",
+    )
+    tree_golia_no = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Tree's Log No.",
+        help_text="रुखको गोलिया नं.",
+    )
+    golia_no = models.CharField(
+        max_length=20,
+        verbose_name="Log (Golia) No.",
+        help_text="गोलिया नं.",
+    )
+    girth_inch = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Girth (inch)",
+        help_text="गोलाई (घेरा), इन्चमा",
+    )
+    length_feet = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Length (ft)",
+        help_text="लम्बाई, फिटमा",
+    )
+    volume_cubic_feet = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Volume (cu.ft)",
+        help_text="आयतन (घन फिट)",
+    )
+    total_pieces = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Total Pieces",
+        help_text="ढेड्रो टुक्रा जम्मा",
+    )
+    timber1_pieces = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Timber No.1 - Pieces",
+        help_text="टिम्बर नं. १ - व्यास नं. १ को टुक्रा",
+    )
+    timber1_diameter_1_inch = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Timber No.1 - Diameter 1 (inch)",
+    )
+    timber1_diameter_2_inch = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Timber No.1 - Diameter 2 (inch)",
+    )
+    timber2_pieces = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Timber No.2 - Pieces",
+        help_text="टिम्बर नं. २ - व्यास नं. १ को टुक्रा",
+    )
+    timber2_diameter_1_inch = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Timber No.2 - Diameter 1 (inch)",
+    )
+    timber2_diameter_2_inch = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Timber No.2 - Diameter 2 (inch)",
+    )
+    avg_diameter_length_1_feet = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Avg. Diameter Length 1 (ft)",
+        help_text="औसत व्यासको लम्बाई (फि.)",
+    )
+    avg_diameter_length_2_feet = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Avg. Diameter Length 2 (ft)",
+        help_text="औसत व्यासको लम्बाई (फि.)",
+    )
+    sawn_volume_cft = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Sawn Volume (Cft)",
+        help_text="चिरिएको काठको आयतन (Volume, Cft)",
+    )
+    wastage_percent = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Wastage (%)",
+        help_text="ढेड्रोको प्रतिशत (waste percentage)",
+    )
+    net_volume_cft = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name="Net Volume (Cft)",
+        help_text="नेट आयतन (क्यु.फि.)",
+    )
+    grade = models.CharField(
+        max_length=5,
+        choices=GRADE_CHOICES.choices,
+        verbose_name="Log Grade",
+        help_text="गोलियाको ग्रेड (A / B / C)",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Timber Log Entry"
+        verbose_name_plural = "Timber Log Entries"
+        indexes = [
+            models.Index(fields=["golia_no"]),
+        ]
+
+    def __str__(self):
+        return f"#{self.serial_no} - Tree {self.tree_no} / Log {self.golia_no} ({self.grade})"

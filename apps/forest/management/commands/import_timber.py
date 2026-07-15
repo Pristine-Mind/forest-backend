@@ -1,72 +1,80 @@
-import json
 from decimal import Decimal
-from pathlib import Path
 
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
-from apps.forest.models import ForestBlock, TimberCollection
+from apps.forest.models import ForestBlock, Species, TimberCollection
+
+BLOCK_LOOKUP_FIELD = "block_no"
+SPECIES_LOOKUP_FIELD = "species_name"
+
+BLOCK_NAMES = {
+    1: "१",
+    2: "२",
+}
+
+# Data transcribed from the source table.
+# wood_volume is in घन फिट, firewood is in चट्टा.
+DATA = [
+    {"block_id": 1, "species": 2, "wood_volume": "3638.21", "firewood": "10.91"},
+    {"block_id": 2, "species": 2, "wood_volume": "697.90", "firewood": "2.09"},
+    {"block_id": 1, "species": 3, "wood_volume": "136.57", "firewood": "0.41"},
+    {"block_id": 2, "species": 3, "wood_volume": "374.61", "firewood": "1.09"},
+    {"block_id": 1, "species": 8, "wood_volume": "388.53", "firewood": "1.17"},
+    {"block_id": 2, "species": 8, "wood_volume": "94.08", "firewood": "0.29"},
+    {"block_id": 1, "species": 5, "wood_volume": "137.00", "firewood": "0.41"},
+    {"block_id": 2, "species": 5, "wood_volume": "0.00", "firewood": "0.00"},
+    {"block_id": 1, "species": 4, "wood_volume": "0.00", "firewood": "0.00"},
+    {"block_id": 2, "species": 4, "wood_volume": "113.74", "firewood": "0.34"},
+]
 
 
 class Command(BaseCommand):
-    help = "Import forest blocks from JSON file"
+    help = "Import TimberCollection records (काठ/दाउरा) from the source table."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--file",
-            type=str,
-            default="data/timber.json",
-            help="Path to the JSON file to import (default: data/timber.json)",
-        )
-        parser.add_argument(
-            "--clear",
+            "--dry-run",
             action="store_true",
-            help="Clear existing timber records before importing",
+            help="Print what would be imported without writing to the database.",
         )
 
     def handle(self, *args, **options):
-        file_path = options["file"]
-
-        # Check if file exists
-        if not Path(file_path).exists():
-            self.stdout.write(self.style.ERROR(f"File not found: {file_path}"))
-            return
-
-        # Clear existing timber records if requested
-        if options["clear"]:
-            count = TimberCollection.objects.count()
-            TimberCollection.objects.all().delete()
-            self.stdout.write(self.style.WARNING(f"Deleted {count} existing timber records"))
-
-        # Read and import JSON data
-        with open(file_path, "r", encoding="utf-8") as f:
-            timber_data = json.load(f)
-
+        dry_run = options["dry_run"]
         created_count = 0
         updated_count = 0
-        error_count = 0
 
-        for timber_entry in timber_data:
-            try:
-                # Prepare data
-                block_dict = {
-                    "block_id": timber_entry.get("block_id"),
-                    "species_id": timber_entry.get("species_id"),
-                    "wood_volume": Decimal(str(timber_entry.get("wood_volume", 0))),
-                    "firewood": Decimal(str(timber_entry.get("firewood", 0))),
+        with transaction.atomic():
+            for row in DATA:
+                block_name = BLOCK_NAMES[row["block_id"]]
+
+                block = ForestBlock.objects.get(**{BLOCK_LOOKUP_FIELD: block_name})
+
+                species = Species.objects.get(id=row["species"])
+                print(species.id)
+
+                defaults = {
+                    "wood_volume": Decimal(row["wood_volume"]),
+                    "firewood": Decimal(row["firewood"]),
                 }
 
-                # Create or update block
-                block, created = TimberCollection.objects.get_or_create(**block_dict)
+                if dry_run:
+                    self.stdout.write(f"[dry-run] {block_name} - {row['species']}: {defaults}")
+                    continue
 
-            except Exception as e:
-                print(f"Error importing timber entry: {timber_entry}. Error: {e}")
-                error_count += 1
-                self.stdout.write(self.style.ERROR(f"✗ Error importing data"))
+                obj, created = TimberCollection.objects.update_or_create(
+                    block=block,
+                    species=species,
+                    defaults=defaults,
+                )
+                if created:
+                    created_count += 1
+                else:
+                    updated_count += 1
 
-        # Summary
-        self.stdout.write(self.style.SUCCESS("\n" + "=" * 50))
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Import completed!\n" f"Created: {created_count}\n" f"Updated: {updated_count}\n" f"Errors: {error_count}"
-            )
-        )
+            if dry_run:
+                self.stdout.write(self.style.SUCCESS("Dry run complete. No changes made."))
+                transaction.set_rollback(True)
+                return
+
+        self.stdout.write(self.style.SUCCESS(f"Import complete: {created_count} created, {updated_count} updated."))

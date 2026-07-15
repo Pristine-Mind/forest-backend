@@ -42,6 +42,7 @@ class Household(AbstractBaseModel):
         CANCELLED = "cancelled", _("Cancelled")
 
     household_head_name = models.CharField(max_length=255)
+    english_name = models.CharField(max_length=255, blank=True, null=True)
     tole = models.CharField(max_length=255, blank=True)
     wealth_class = models.CharField(max_length=16, choices=WealthClass.choices)
 
@@ -172,4 +173,4 @@ class MembershipRenewal(AbstractBaseModel):
         constraints = [models.UniqueConstraint(fields=["member", "fiscal_year"], name="unique_member_fiscal_year")]
 
     def __str__(self) -> str:
-        return f"{self.member.full_name} - {self.fiscal_year}"
+        return f"{self.member.household_head_name} - {self.fiscal_year}"

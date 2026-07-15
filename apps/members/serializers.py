@@ -38,6 +38,7 @@ class HouseholdSerializer(serializers.ModelSerializer):
             "updated_at",
             "contact_number",
             "membership_number",
+            "english_name",
         ]
         read_only_fields = ["id", "entry_fee_due", "created_at", "updated_at"]
 
@@ -79,7 +80,7 @@ class MemberListSerializer(MemberSerializer):
 
 
 class MembershipRenewalSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source="member.full_name", read_only=True)
+    member_name = serializers.CharField(source="member.household_head_name", read_only=True)
 
     class Meta:
         model = MembershipRenewal

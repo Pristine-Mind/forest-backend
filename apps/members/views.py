@@ -43,7 +43,7 @@ class HouseholdViewSet(viewsets.ModelViewSet):
     permission_classes = [IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filterset_fields = ["wealth_class", "tole", "status"]
-    search_fields = ["household_head_name", "tole"]
+    search_fields = ["household_head_name", "tole", "english_name", "citizenship_no"]
 
     def get_queryset(self):
         user = self.request.user

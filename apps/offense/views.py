@@ -46,16 +46,6 @@ class OffenseReportViewSet(viewsets.ModelViewSet):
     filterset_fields = ["status", "offense_type", "report_date"]
     search_fields = ["accused_name", "offense_type"]
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        if user.is_member_user():
-            member = getattr(user, "member_profile", None)
-            if member is None:
-                raise PermissionDenied("User is not linked to a member profile.")
-            serializer.save(reported_by=member, user=user)
-        else:
-            serializer.save(user=user)
-
     @action(detail=True, methods=["post"], permission_classes=[IsCommitteeOfficer])
     def resolve(self, request, pk=None):
         from apps.core.services import resolve_offense_fine_paid

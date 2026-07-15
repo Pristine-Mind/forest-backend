@@ -24,6 +24,40 @@ class FundAllocationRule(AbstractBaseModel):
         return f"Rule from {self.effective_from}"
 
 
+class BudgetAllocation(AbstractBaseModel):
+
+    class WorkStatus(models.TextChoices):
+        PLANNED = "planned", "Planned"
+        IN_PROGRESS = "in_progress", "In Progress"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    fiscal_year = models.CharField(max_length=16)
+    title = models.CharField(max_length=255)
+    work_description = models.TextField(blank=True)
+    allocated_amount = models.FloatField()
+    approved_date = models.DateField(null=True, blank=True)
+    work_status = models.CharField(
+        max_length=20,
+        choices=WorkStatus.choices,
+        default=WorkStatus.PLANNED,
+    )
+    remarks = models.TextField(blank=True)
+    approved_by = models.ForeignKey(
+        "core.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_budget_allocations",
+    )
+
+    class Meta:
+        ordering = ["-approved_date"]
+
+    def __str__(self):
+        return self.title
+
+
 class BankAccount(AbstractBaseModel):
     bank_name = models.CharField(max_length=255)
     account_number = models.CharField(max_length=64)
@@ -50,6 +84,37 @@ class BankAccount(AbstractBaseModel):
         women_count = CommitteeMember.objects.filter(pk__in=self.signatories, gender__iexact="female").count()
         if women_count < 1:
             raise ValidationError({"signatories": "At least one signatory must be a woman, per the bylaws."})
+
+
+class BankTransaction(AbstractBaseModel):
+    class Type(models.TextChoices):
+        DEPOSIT = "deposit", _("Deposit")
+        WITHDRAWAL = "withdrawal", _("Withdrawal")
+
+    account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name="transactions")
+    transaction_date = models.DateField()
+    transaction_type = models.CharField(max_length=16, choices=Type.choices, null=True, blank=True)
+    amount = models.FloatField()
+    description = models.TextField()
+    requires_committee_approval = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(
+        "core.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_bank_transactions",
+    )
+
+    class Meta:
+        ordering = ["-transaction_date"]
+        verbose_name = "Bank Transaction"
+        verbose_name_plural = "Bank Transactions"
+
+    def __str__(self) -> str:
+        return f"{self.transaction_date} - {self.amount} - {self.description}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
 
 
 class CashTransaction(AbstractBaseModel):

@@ -22,7 +22,7 @@ class CommitteeMember(AbstractBaseModel):
         VACANT = "vacant", _("Vacant")
         REMOVED = "removed", _("Removed")
 
-    member = models.ForeignKey("members.Member", on_delete=models.CASCADE, related_name="committee_roles")
+    member = models.ForeignKey("members.Household", on_delete=models.CASCADE, related_name="committee_roles")
     position = models.CharField(max_length=20, choices=Position.choices)
     gender = models.CharField(max_length=16)
     caste_ethnicity = models.CharField(max_length=255, blank=True)
@@ -30,6 +30,7 @@ class CommitteeMember(AbstractBaseModel):
     term_end = models.DateField()
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     subcommittees = models.ManyToManyField("SubCommittee", blank=True, related_name="committee_members")
+    photo = models.ImageField(upload_to="committee_members/", blank=True, null=True)
 
     class Meta:
         ordering = ["-term_start", "position"]
@@ -37,7 +38,7 @@ class CommitteeMember(AbstractBaseModel):
         verbose_name_plural = "Committee Members"
 
     def __str__(self) -> str:
-        return f"{self.member.full_name} - {self.position}"
+        return f"{self.member.household_head_name} - {self.position}"
 
 
 class Election(AbstractBaseModel):
@@ -64,7 +65,7 @@ class Candidate(AbstractBaseModel):
         NOT_ELECTED = "not_elected", _("Not Elected")
 
     election = models.ForeignKey(Election, on_delete=models.CASCADE, related_name="candidates")
-    member = models.ForeignKey("members.Member", on_delete=models.CASCADE, related_name="candidacies")
+    member = models.ForeignKey("members.Household", on_delete=models.CASCADE, related_name="candidacies")
     position_applied = models.CharField(max_length=64)
     votes_received = models.PositiveIntegerField(default=0)
     result = models.CharField(max_length=16, choices=Result.choices, default=Result.NOT_ELECTED)
@@ -75,7 +76,7 @@ class Candidate(AbstractBaseModel):
         verbose_name_plural = "Candidates"
 
     def __str__(self) -> str:
-        return f"{self.member.full_name} for {self.position_applied}"
+        return f"{self.member.household_head_name} for {self.position_applied}"
 
 
 class SubCommittee(AbstractBaseModel):

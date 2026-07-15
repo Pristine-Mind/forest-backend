@@ -19,6 +19,7 @@ class MembershipRenewalInline(admin.TabularInline):
 class HouseholdAdmin(admin.ModelAdmin):
     list_display = [
         "household_head_name",
+        "english_name",
         "tole",
         "citizenship_no",
         "wealth_class",

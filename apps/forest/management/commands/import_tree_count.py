@@ -1,163 +1,153 @@
-import json
-from decimal import Decimal
-from pathlib import Path
+import csv
+from decimal import Decimal, InvalidOperation
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 from apps.forest.models import ForestBlock, OperationalPlan, Species, TreeCountRegister
 
 
+class DryRunRollback(Exception):
+    """Raised internally to unwind the transaction after a --dry-run pass."""
+
+
 class Command(BaseCommand):
-    help = "Import tree count records from JSON file (data/treecount.json by default)"
+    help = "Import tree count register rows from a CSV file into TreeCountRegister."
 
     def add_arguments(self, parser):
+        parser.add_argument("csv_file", type=str, help="Path to the tree_register.csv file")
         parser.add_argument(
-            "--file",
-            type=str,
-            default="data/treecount.json",
-            help="Path to the JSON file to import (default: data/treecount.json)",
+            "--operational-plan-id",
+            type=int,
+            required=False,
+            default=None,
+            help="Optional ID of the OperationalPlan these trees belong to (left NULL if omitted)",
         )
         parser.add_argument(
-            "--clear",
+            "--dry-run",
             action="store_true",
-            help="Clear existing tree count records before importing",
+            help="Validate and print what would happen without committing to the database",
         )
 
     def handle(self, *args, **options):
-        file_path = options["file"]
+        csv_path = options["csv_file"]
+        op_plan_id = options["operational_plan_id"]
+        dry_run = options["dry_run"]
 
-        # Check if file exists
-        if not Path(file_path).exists():
-            self.stdout.write(self.style.ERROR(f"File not found: {file_path}"))
-            return
+        try:
+            rows = self._load_rows(csv_path)
+        except FileNotFoundError as exc:
+            raise CommandError(f"CSV file not found: {csv_path}") from exc
 
-        # Clear existing records if requested
-        if options["clear"]:
-            record_count = TreeCountRegister.objects.count()
-            TreeCountRegister.objects.all().delete()
-            self.stdout.write(self.style.WARNING(f"Deleted {record_count} existing tree count records"))
+        species_cache = {}
+        imported = 0
+        skipped = []
 
-        # Read JSON data
-        with open(file_path, "r", encoding="utf-8") as f:
-            tree_data_list = json.load(f)
-
-        created_count = 0
-        updated_count = 0
-        error_count = 0
-        skipped_count = 0
-
-        self.stdout.write(f"\nImporting {len(tree_data_list)} tree records from {file_path}...")
-        self.stdout.write("=" * 60)
-
-        for idx, tree_data in enumerate(tree_data_list, 1):
-            try:
-                # Get foreign key references
-                block_id = tree_data.get("block")
-                species_id = tree_data.get("species")
-                plot_number = tree_data.get("plot_number")
-                tree_number = tree_data.get("tree_number")
-
-                # Validate required fields
-                if not block_id or not plot_number or not tree_number:
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"⊘ Skipped record {idx}: Missing required fields "
-                            f"(block={block_id}, plot={plot_number}, tree={tree_number})"
-                        )
-                    )
-                    skipped_count += 1
-                    continue
-
-                # Get or validate foreign key objects exist
-                try:
-                    block = ForestBlock.objects.get(pk=block_id)
-                except ForestBlock.DoesNotExist:
-                    self.stdout.write(
-                        self.style.WARNING(f"⊘ Skipped record {idx}: ForestBlock with id={block_id} not found")
-                    )
-                    skipped_count += 1
-                    continue
-
-                # Get species if specified
-                species = None
-                if species_id:
+        try:
+            with transaction.atomic():
+                for i, row in enumerate(rows, start=1):
+                    block_key = row["block_no"].strip()
                     try:
-                        species = Species.objects.get(pk=species_id)
-                    except Species.DoesNotExist:
-                        self.stdout.write(
-                            self.style.WARNING(f"⚠ Record {idx}: Species with id={species_id} not found, skipping")
-                        )
-                        skipped_count += 1
+                        block = ForestBlock.objects.get(block_no=block_key)
+                    except ForestBlock.DoesNotExist:
+                        skipped.append((i, row, f"no ForestBlock matches block_no={block_key!r}"))
+                        continue
+                    except ForestBlock.MultipleObjectsReturned:
+                        skipped.append((i, row, f"multiple ForestBlock rows match block_no={block_key!r}"))
                         continue
 
-                # Prepare tree count data with proper Decimal conversion
-                tree_dict = {
-                    "block": block,
-                    "species": species,
-                    "plot_number": plot_number,
-                    "tree_number": tree_number,
-                    "girth_cm": self._to_decimal(tree_data.get("girth_cm")),
-                    "height_m": self._to_decimal(tree_data.get("height_m")),
-                    "tree_class": tree_data.get("tree_class"),
-                    "basal_area_sqm": self._to_decimal(tree_data.get("basal_area_sqm")),
-                    "stem_volume_cubic_m": self._to_decimal(tree_data.get("stem_volume_cubic_m")),
-                    "r_factor": self._to_decimal(tree_data.get("r_factor")),
-                    "branch_volume_cubic_m": self._to_decimal(tree_data.get("branch_volume_cubic_m")),
-                    "total_volume_cubic_m": self._to_decimal(tree_data.get("total_volume_cubic_m")),
-                    "r_less_than_10": self._to_decimal(tree_data.get("r_less_than_10")),
-                    "volume_less_than_10_cubic_m": self._to_decimal(tree_data.get("volume_less_than_10_cubic_m")),
-                    "gross_volume_cubic_m": self._to_decimal(tree_data.get("gross_volume_cubic_m")),
-                    "net_volume_cubic_m": self._to_decimal(tree_data.get("net_volume_cubic_m")),
-                    "fuelwood_volume_cubic_m": self._to_decimal(tree_data.get("fuelwood_volume_cubic_m")),
-                    "is_harvestable": tree_data.get("is_harvestable", True),
-                    "is_active": tree_data.get("is_active", True),
-                    "notes": tree_data.get("notes", ""),
-                }
+                    species_id_raw = (row.get("species_id") or "").strip()
+                    if not species_id_raw:
+                        skipped.append((i, row, f"species {row['species_name']!r} has no species_id in CSV (e.g. अन्य)"))
+                        continue
 
-                # Create or update tree count record
-                record, created = TreeCountRegister.objects.update_or_create(
-                    block=block, plot_number=plot_number, tree_number=tree_number, defaults=tree_dict
-                )
+                    try:
+                        species = self._resolve_species(int(species_id_raw), species_cache)
+                    except Species.DoesNotExist:
+                        skipped.append((i, row, f"no Species row with id={species_id_raw}"))
+                        continue
 
-                if created:
-                    created_count += 1
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"✓ Created record {idx}: Block {block.block_name}, " f"Plot {plot_number}, Tree {tree_number}"
-                        )
+                    record = TreeCountRegister(
+                        block=block,
+                        operational_plan_id=op_plan_id,
+                        species=species,
+                        plot_number=self._to_int(row["plot_number"]),
+                        tree_number=self._to_int(row["row_no"]),
+                        girth_cm=self._to_decimal(row["girth_cm"]),
+                        height_m=self._to_decimal(row["height_m"]),
+                        tree_class=row["tree_class"].strip() or None,
+                        basal_area_sqm=self._to_decimal(row["basal_area_sqm"]),
+                        stem_volume_cubic_m=self._to_decimal(row["stem_volume_cubic_m"]),
+                        r_factor=self._to_decimal(row["r_factor"]) or Decimal("0.00"),
+                        branch_volume_cubic_m=self._to_decimal(row["branch_volume_cubic_m"]),
+                        total_volume_cubic_m=self._to_decimal(row["total_volume_cubic_m"]),
+                        r_less_than_10=self._to_decimal(row["r_less_than_10"]) or Decimal("0.00"),
+                        volume_less_than_10_cubic_m=self._to_decimal(row["volume_less_than_10_cubic_m"]),
+                        gross_volume_cubic_m=self._to_decimal(row["gross_volume_cubic_m"]),
+                        net_volume_cubic_m=self._to_decimal(row["net_volume_cubic_m"]),
+                        fuelwood_volume_cubic_m=self._to_decimal(row["fuelwood_volume_cubic_m"]),
                     )
-                else:
-                    updated_count += 1
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"⟳ Updated record {idx}: Block {block.block_name}, " f"Plot {plot_number}, Tree {tree_number}"
-                        )
-                    )
+                    record.save()
+                    imported += 1
 
-            except Exception as e:
-                error_count += 1
+                    if dry_run:
+                        self.stdout.write(
+                            f"[dry-run] row {i} - {species.species_name} "
+                            f"(block {block_key}, plot {record.plot_number}): "
+                            f"girth={record.girth_cm} height={record.height_m} "
+                            f"net_vol={record.net_volume_cubic_m} fuelwood={record.fuelwood_volume_cubic_m}"
+                        )
+
+                if dry_run:
+                    raise DryRunRollback()
+        except DryRunRollback:
+            pass
+
+        self.stdout.write("")
+        if dry_run:
+            self.stdout.write(self.style.SUCCESS(f"[dry-run] Would import {imported} row(s); nothing was committed."))
+        else:
+            self.stdout.write(self.style.SUCCESS(f"Imported {imported} row(s) into TreeCountRegister."))
+
+        if skipped:
+            self.stdout.write(self.style.ERROR(f"\n{len(skipped)} row(s) skipped:"))
+            for i, row, reason in skipped:
                 self.stdout.write(
                     self.style.ERROR(
-                        f"✗ Error in record {idx} (Block: {tree_data.get('block')}, "
-                        f"Plot: {tree_data.get('plot_number')}, Tree: {tree_data.get('tree_number')}): {str(e)}"
+                        f"  row {i} (block={row.get('block_no')}, plot={row.get('plot_number')}, "
+                        f"species={row.get('species_name')}): {reason}"
                     )
                 )
 
-        # Summary
-        self.stdout.write("\n" + "=" * 60)
-        self.stdout.write(self.style.SUCCESS("Import Summary:"))
-        self.stdout.write(f"  ✓ Created:  {created_count}")
-        self.stdout.write(f"  ⟳ Updated:  {updated_count}")
-        self.stdout.write(f"  ⊘ Skipped:  {skipped_count}")
-        self.stdout.write(f"  ✗ Errors:   {error_count}")
-        self.stdout.write(f"  Total:      {len(tree_data_list)}")
-        self.stdout.write("=" * 60 + "\n")
+    # -- helpers ----------------------------------------------------------
 
-    def _to_decimal(self, value):
-        """Convert value to Decimal, handling None and various types"""
-        if value is None:
+    def _load_rows(self, csv_path):
+        with open(csv_path, encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+
+    def _resolve_species(self, species_id, cache):
+        if species_id in cache:
+            return cache[species_id]
+        species = Species.objects.get(pk=species_id)  # raises Species.DoesNotExist if missing
+        cache[species_id] = species
+        return species
+
+    @staticmethod
+    def _to_decimal(value):
+        value = (value or "").strip()
+        if value == "":
             return None
         try:
-            return Decimal(str(value))
-        except (ValueError, TypeError):
+            return Decimal(value)
+        except InvalidOperation:
+            return None
+
+    @staticmethod
+    def _to_int(value):
+        value = (value or "").strip()
+        if value == "":
+            return None
+        try:
+            return int(float(value))
+        except ValueError:
             return None

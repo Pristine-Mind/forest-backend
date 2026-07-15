@@ -56,7 +56,7 @@ class FeeCollection(AbstractBaseModel):
         PARTIAL = "partial", _("Partial")
 
     member = models.ForeignKey(
-        "members.Member",
+        "members.Household",
         on_delete=models.CASCADE,
         null=True,
         blank=True,

@@ -4,9 +4,11 @@ from apps.core.models import SystemConfig
 from apps.fund.models import (
     Audit,
     BankAccount,
+    BankTransaction,
     CashTransaction,
     FundAllocationRule,
     PublicAudit,
+    BudgetAllocation,
 )
 
 
@@ -94,6 +96,39 @@ class PublicAuditSerializer(serializers.ModelSerializer):
             "fiscal_year",
             "presentation_date",
             "assembly_approval",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class BankTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BankTransaction
+        fields = [
+            "id",
+            "account",
+            "transaction_type",
+            "amount",
+            "transaction_date",
+            "description",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class BudgetAllocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BudgetAllocation
+        fields = [
+            "id",
+            "fiscal_year",
+            "title",
+            "work_description",
+            "allocated_amount",
+            "approved_date",
+            "work_status",
+            "remarks",
+            "approved_by",
             "created_at",
             "updated_at",
         ]

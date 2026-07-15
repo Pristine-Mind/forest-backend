@@ -4,7 +4,7 @@ from apps.harvest.models import HarvestRequest
 
 
 class HarvestRequestSerializer(serializers.ModelSerializer):
-    member_name = serializers.CharField(source="member.full_name", read_only=True)
+    member_name = serializers.CharField(source="member.household_head_name", read_only=True)
     species_name = serializers.CharField(source="species.species_name", read_only=True)
     approved_by_name = serializers.CharField(source="approved_by.full_name", read_only=True)
 
@@ -37,7 +37,7 @@ class HarvestRequestSerializer(serializers.ModelSerializer):
         if source_type == HarvestRequest.SourceType.MEMBER_REQUESTED:
             if not member:
                 raise serializers.ValidationError({"member": "Member is required for member-requested harvests."})
-            if member.household.membership_status != member.household.MembershipStatus.ACTIVE:
+            if member.membership_status != member.MembershipStatus.ACTIVE:
                 raise serializers.ValidationError({"member": "Only active members may submit a harvest request."})
             if operation_name:
                 raise serializers.ValidationError({"operation_name": "Must be blank for member-requested harvests."})
