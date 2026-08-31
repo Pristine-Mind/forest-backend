@@ -38,7 +38,7 @@ def _member_filter_for_user(user):
 
 
 class HouseholdViewSet(viewsets.ModelViewSet):
-    queryset = Household.objects.all()
+    queryset = Household.objects.order_by("english_name")
     serializer_class = HouseholdSerializer
     permission_classes = [IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]

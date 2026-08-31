@@ -103,6 +103,7 @@ class Member(AbstractBaseModel):
         null=True,
     )
     full_name = models.CharField(max_length=255)
+    full_name_en = models.CharField(max_length=255, blank=True, null=True)
     member_photo = models.FileField(upload_to="member_photos/", blank=True, null=True)
 
     class Meta:

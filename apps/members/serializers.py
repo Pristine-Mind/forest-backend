@@ -59,6 +59,7 @@ class MemberSerializer(serializers.ModelSerializer):
             "member_photo",
             "relation",
             "full_name",
+            "full_name_en",
             "created_at",
             "updated_at",
         ]
@@ -72,6 +73,7 @@ class MemberListSerializer(MemberSerializer):
         fields = [
             "id",
             "full_name",
+            "full_name_en",
             "household_name",
             "member_photo",
             "relation",
@@ -479,65 +481,65 @@ class MemberDetailStatsSerializer(serializers.ModelSerializer):
     def get_committee_roles_count(self, obj):
         from apps.governance.models import CommitteeMember
 
-        return CommitteeMember.objects.filter(member=obj).count()
+        return CommitteeMember.objects.filter(member=obj.household).count()
 
     def get_candidacies_count(self, obj):
         from apps.governance.models import Candidate
 
-        return Candidate.objects.filter(member=obj).count()
+        return Candidate.objects.filter(member=obj.household).count()
 
     def get_fee_collections_count(self, obj):
         from apps.billing.models import FeeCollection
 
-        return FeeCollection.objects.filter(member=obj).count()
+        return FeeCollection.objects.filter(member=obj.household).count()
 
     def get_total_fees_collected(self, obj):
         from apps.billing.models import FeeCollection
 
-        total = FeeCollection.objects.filter(member=obj).aggregate(Sum("amount_paid"))["amount_paid__sum"]
+        total = FeeCollection.objects.filter(member=obj.household).aggregate(Sum("amount_paid"))["amount_paid__sum"]
         return float(total) if total else 0.0
 
     def get_harvest_requests_count(self, obj):
         from apps.harvest.models import HarvestRequest
 
-        return HarvestRequest.objects.filter(member=obj).count()
+        return HarvestRequest.objects.filter(member=obj.household).count()
 
     def get_harvest_requests_approved(self, obj):
         from apps.harvest.models import HarvestRequest
 
-        return HarvestRequest.objects.filter(member=obj, status="approved").count()
+        return HarvestRequest.objects.filter(member=obj.household, status="approved").count()
 
     def get_harvest_requests_pending(self, obj):
         from apps.harvest.models import HarvestRequest
 
-        return HarvestRequest.objects.filter(member=obj, status="pending").count()
+        return HarvestRequest.objects.filter(member=obj.household, status="pending").count()
 
     def get_sales_count(self, obj):
         from apps.inventory.models import Sale
 
-        return Sale.objects.filter(member=obj).count()
+        return Sale.objects.filter(member=obj.household).count()
 
     def get_total_sales_amount(self, obj):
         from apps.inventory.models import Sale
 
-        total = Sale.objects.filter(member=obj).aggregate(Sum("total_amount"))["total_amount__sum"]
+        total = Sale.objects.filter(member=obj.household).aggregate(Sum("total_amount"))["total_amount__sum"]
         return float(total) if total else 0.0
 
     def get_offense_reports_filed(self, obj):
         from apps.offense.models import OffenseReport
 
-        return OffenseReport.objects.filter(reported_by=obj).count()
+        return OffenseReport.objects.filter(reported_by=obj.id).count()
 
     def get_informant_rewards_received(self, obj):
         from apps.offense.models import InformantReward
 
-        total = InformantReward.objects.filter(informant=obj).aggregate(Sum("reward_amount"))["reward_amount__sum"]
+        total = InformantReward.objects.filter(informant=obj.household).aggregate(Sum("reward_amount"))["reward_amount__sum"]
         return float(total) if total else 0.0
 
     def get_patrol_logs_count(self, obj):
         from apps.offense.models import PatrolLog
 
-        return PatrolLog.objects.filter(watcher=obj).count()
+        return PatrolLog.objects.filter(watcher=obj.household).count()
 
     def get_revolving_loans_count(self, obj):
         from apps.livelihood.models import RevolvingFundLoan

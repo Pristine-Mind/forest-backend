@@ -49,6 +49,15 @@ class FeeCollection(AbstractBaseModel):
         ROYALTY = "royalty", _("Royalty")
         VISITOR_ENTRY = "visitor_entry", _("Visitor Entry")
         OTHER = "other", _("Other")
+        PENALTY = "penalty", _("Penalty")
+        WORM_COMPOST = "worm_compost", _("Worm Compost")
+        ARREARS_COLLECTION = "arrears_collection", _("Arrears Collection")
+        WILDGRASS = "wildgrass", _("Wildgrass")
+        BID_DOCUMENT = "bid_document", _("Bid Document")
+        HALL_RENT = "hall_rent", _("Hall Rent")
+        CANED_BAMBOO = "caned_bamboo", _("Caned Bamboo")
+        FOREST_PRODUCTS = "forest_products", _("Forest Products")
+        DEPOSIT_AMOUNT = "deposit", _("Deposit")
 
     class PaymentStatus(models.TextChoices):
         PAID = "paid", _("Paid")
@@ -62,7 +71,7 @@ class FeeCollection(AbstractBaseModel):
         blank=True,
         related_name="fee_collections",
     )
-    fee_type = models.CharField(max_length=16, choices=FeeType.choices)
+    fee_type = models.CharField(max_length=24, choices=FeeType.choices)
     amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
     amount_paid = models.DecimalField(
         max_digits=12,
