@@ -27,9 +27,7 @@ class Command(BaseCommand):
                 writer.writeheader()
 
                 for household in households:
-                    member_names = ", ".join(
-                        [member.full_name for member in household.members.all()]
-                    )
+                    member_names = ", ".join([member.full_name for member in household.members.all()])
                     writer.writerow(
                         {
                             "Household ID": household.id,
@@ -39,9 +37,7 @@ class Command(BaseCommand):
                     )
 
             self.stdout.write(
-                self.style.SUCCESS(
-                    f"✓ Successfully exported {households.count()} households to {output_file}"
-                )
+                self.style.SUCCESS(f"✓ Successfully exported {households.count()} households to {output_file}")
             )
 
         except Exception as e:

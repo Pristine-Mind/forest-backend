@@ -49,6 +49,6 @@ class Command(BaseCommand):
                 if member_created:
                     created_members += 1
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Done. Households created: {created_households}, Members created: {created_members}"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(f"Done. Households created: {created_households}, Members created: {created_members}")
+        )

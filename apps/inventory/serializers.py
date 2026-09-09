@@ -48,6 +48,8 @@ class PriceRateSerializer(serializers.ModelSerializer):
             "grade",
             "buyer_type",
             "rate_per_unit",
+            "collection_per_unit",
+            "total_rate_per_unit",
             "effective_from",
             "created_at",
             "updated_at",
