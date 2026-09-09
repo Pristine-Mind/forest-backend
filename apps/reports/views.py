@@ -151,7 +151,7 @@ class ReportsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def annual_dfo(self, request):
         data = {
-            "members": Member.objects.count(),
+            "members": Member.objects.values("id").distinct().count(),
             "households": Household.objects.count(),
             "tree_species": TreeCountRegister.objects.values("species__species_name").distinct().count(),
             "harvest_requests": HarvestRequest.objects.count(),
