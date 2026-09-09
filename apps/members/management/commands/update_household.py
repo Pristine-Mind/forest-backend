@@ -24,12 +24,12 @@ class Command(BaseCommand):
         try:
             workbook = openpyxl.load_workbook(file_path)
             worksheet = workbook.active
-            
+
             # Get headers from first row
             headers = []
             for cell in worksheet[1]:
                 headers.append(cell.value)
-            
+
             # Read data rows
             rows = []
             for row_idx, row in enumerate(worksheet.iter_rows(min_row=2, values_only=True), start=2):
@@ -38,7 +38,7 @@ class Command(BaseCommand):
                     if header:
                         row_dict[header] = row[col_idx] if col_idx < len(row) else None
                 rows.append((row_idx, row_dict))
-            
+
             return rows
         except Exception as e:
             raise CommandError(f"Error reading XLSX file: {str(e)}")
@@ -51,10 +51,10 @@ class Command(BaseCommand):
                 reader = csv.DictReader(file)
                 if not reader.fieldnames:
                     raise CommandError("CSV file is empty")
-                
+
                 for row_num, row in enumerate(reader, start=2):
                     rows.append((row_num, row))
-            
+
             return rows
         except Exception as e:
             raise CommandError(f"Error reading CSV file: {str(e)}")
@@ -117,15 +117,11 @@ class Command(BaseCommand):
                 failed_entries.append(f"Row {row_num}: Invalid data - {str(e)}")
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"✓ Successfully updated {household_updated} households and {members_updated} members"
-            )
+            self.style.SUCCESS(f"✓ Successfully updated {household_updated} households and {members_updated} members")
         )
 
         if skipped_count > 0:
-            self.stdout.write(
-                self.style.WARNING(f"⊘ Skipped {skipped_count} rows (missing household ID)")
-            )
+            self.stdout.write(self.style.WARNING(f"⊘ Skipped {skipped_count} rows (missing household ID)"))
 
         if failed_entries:
             self.stdout.write(self.style.ERROR(f"✗ Failed entries:"))

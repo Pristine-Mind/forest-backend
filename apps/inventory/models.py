@@ -11,8 +11,14 @@ from apps.core.models import AbstractBaseModel
 
 
 class StockLedger(AbstractBaseModel):
+    class Grade(models.TextChoices):
+        A = "A", _("A")
+        B = "B", _("B")
+        C = "C", _("C")
+        D = "D", _("D")
+
     species = models.ForeignKey("forest.Species", on_delete=models.CASCADE, related_name="stock_ledgers")
-    grade = models.CharField(max_length=16)
+    grade = models.CharField(max_length=16, choices=Grade.choices)
 
     class Meta:
         ordering = ["species__species_name", "grade"]
@@ -69,10 +75,22 @@ class PriceRate(AbstractBaseModel):
         MEMBER = "member", _("Member")
         OUTSIDER = "outsider", _("Outsider")
 
+    class Grade(models.TextChoices):
+        A = "A", _("A")
+        B = "B", _("B")
+        C = "C", _("C")
+        D = "D", _("D")
+
     species = models.ForeignKey("forest.Species", on_delete=models.CASCADE, related_name="price_rates")
-    grade = models.CharField(max_length=16)
+    grade = models.CharField(max_length=16, choices=Grade.choices)
     buyer_type = models.CharField(max_length=16, choices=BuyerType.choices)
     rate_per_unit = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    collection_per_unit = models.DecimalField(
+        max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))], null=True, blank=True
+    )
+    total_rate_per_unit = models.DecimalField(
+        max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))], null=True, blank=True
+    )
     effective_from = models.DateField()
 
     class Meta:
@@ -89,6 +107,10 @@ class PriceRate(AbstractBaseModel):
     def __str__(self) -> str:
         return f"{self.species} - {self.grade} - {self.buyer_type} @ {self.rate_per_unit}"
 
+    def save(self, *args, **kwargs):
+        self.total_rate_per_unit = (self.rate_per_unit or Decimal("0.00")) + (self.collection_per_unit or Decimal("0.00"))
+        super().save(*args, **kwargs)
+
 
 class Sale(AbstractBaseModel):
     class BuyerType(models.TextChoices):
@@ -100,6 +122,12 @@ class Sale(AbstractBaseModel):
         DUE = "due", _("Due")
         PARTIAL = "partial", _("Partial")
 
+    class Grade(models.TextChoices):
+        A = "A", _("A")
+        B = "B", _("B")
+        C = "C", _("C")
+        D = "D", _("D")
+
     buyer_name = models.CharField(max_length=255, null=True, blank=True)
     buyer_type = models.CharField(max_length=16, choices=BuyerType.choices)
     member = models.ForeignKey(
@@ -110,7 +138,7 @@ class Sale(AbstractBaseModel):
         related_name="sales",
     )
     species = models.ForeignKey("forest.Species", on_delete=models.CASCADE, related_name="sales")
-    grade = models.CharField(max_length=16)
+    grade = models.CharField(max_length=16, choices=Grade.choices)
     quantity = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
     rate_applied = models.DecimalField(
         max_digits=12,
@@ -161,6 +189,7 @@ class TimberLogEntry(models.Model):
         A = "A", _("A")
         B = "B", _("B")
         C = "C", _("C")
+        D = "D", _("D")
 
     species = models.ForeignKey(
         "forest.Species",
