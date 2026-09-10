@@ -143,3 +143,28 @@ class TimberLogEntrySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ("id", "created_at", "updated_at")
+
+
+class FiscalYearStockAnalysisSerializer(serializers.Serializer):
+    """Serializer for fiscal year stock analysis data."""
+
+    stock_id = serializers.IntegerField()
+    species = serializers.IntegerField()
+    species_name = serializers.CharField()
+    grade = serializers.CharField()
+    stock_in = serializers.DecimalField(max_digits=12, decimal_places=2)
+    stock_out = serializers.DecimalField(max_digits=12, decimal_places=2)
+    stock_left = serializers.DecimalField(max_digits=12, decimal_places=2)
+    carryover_from_previous_year = serializers.DecimalField(max_digits=12, decimal_places=2)
+    fiscal_year = serializers.CharField()
+
+
+class FiscalYearStockSummarySerializer(serializers.Serializer):
+    """Serializer for overall fiscal year stock summary."""
+
+    fiscal_year = serializers.CharField()
+    total_stock_in = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_stock_out = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_stock_left = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_carryover_from_previous_year = serializers.DecimalField(max_digits=12, decimal_places=2)
+    by_species = serializers.ListField(child=FiscalYearStockAnalysisSerializer())

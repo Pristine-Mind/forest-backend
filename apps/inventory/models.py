@@ -179,8 +179,15 @@ class Sale(AbstractBaseModel):
 
     def save(self, *args, **kwargs):
         self.total_amount = self.quantity * self.rate_applied
-        if self.buyer_name is None or self.member is None:
-            raise ValidationError("Either buyer_name or member must be provided.")
+
+        # Validate buyer based on type
+        if self.buyer_type == self.BuyerType.MEMBER and not self.member:
+            raise ValidationError({"member": "Member is required when buyer type is member."})
+        if self.buyer_type == self.BuyerType.OUTSIDER and self.member:
+            raise ValidationError({"member": "Member must be blank when buyer type is outsider."})
+        # if not self.buyer_name or (self.buyer_type == self.BuyerType.MEMBER and not self.member):
+        #     raise ValidationError({"buyer_name": "Buyer name is required."})
+
         super().save(*args, **kwargs)
 
 

@@ -134,7 +134,7 @@ class SystemConfig(AbstractBaseModel):
     renewal_fee_overdue_5yr = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("200.00"))
     renewal_fee_overdue_5yr_plus = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("300.00"))
     membership_cancellation_years = models.PositiveSmallIntegerField(default=5)
-    current_fiscal_year = models.CharField(max_length=16, default="2082/83")
+    current_fiscal_year = models.CharField(max_length=16, default="2026/27")
 
     # Fund allocation
     forest_dev_min_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("50.00"))
@@ -191,6 +191,29 @@ class SystemConfig(AbstractBaseModel):
             cache.delete("system_config_singleton")
         except Exception:
             pass
+
+    @staticmethod
+    def calculate_current_fiscal_year() -> str:
+        """
+        Calculate the current fiscal year based on today's date.
+        Fiscal year runs from July 15 to July 14 (Nepali fiscal year).
+
+        Returns: Fiscal year string in format YYYY/YY (e.g., "2026/27")
+        """
+        from datetime import date
+
+        today = date.today()
+        # Fiscal year starts on July 15
+        if today.month >= 7 and today.day >= 15:
+            # After July 15: current fiscal year is this year
+            fy_start = today.year
+        else:
+            # Before July 15: current fiscal year started last year
+            fy_start = today.year - 1
+
+        fy_end = fy_start + 1
+        # Format as YYYY/YY (e.g., 2026/27)
+        return f"{fy_start}/{str(fy_end)[-2:]}"
 
 
 class AuditLog(AbstractBaseModel):
