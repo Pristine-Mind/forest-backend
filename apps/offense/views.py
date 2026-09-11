@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from apps.core.permissions import (
     IsAuthenticatedReadOnly,
-    IsCommitteeOfficer,
+    IsCommitteeChair,
     IsMember,
     IsSubCommitteeMember,
 )
@@ -42,11 +42,11 @@ def _is_offense_subcommittee_user(user):
 class OffenseReportViewSet(viewsets.ModelViewSet):
     queryset = OffenseReport.objects.prefetch_related("evidence", "hearings")
     serializer_class = OffenseReportSerializer
-    permission_classes = [IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["status", "offense_type", "report_date"]
     search_fields = ["accused_name", "offense_type"]
 
-    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeChair])
     def resolve(self, request, pk=None):
         from apps.core.services import resolve_offense_fine_paid
 
@@ -72,26 +72,26 @@ class OffenseReportViewSet(viewsets.ModelViewSet):
 class EvidenceItemViewSet(viewsets.ModelViewSet):
     queryset = EvidenceItem.objects.select_related("offense")
     serializer_class = EvidenceItemSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["offense", "item_type"]
 
 
 class HearingRecordViewSet(viewsets.ModelViewSet):
     queryset = HearingRecord.objects.select_related("offense")
     serializer_class = HearingRecordSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["offense", "hearing_date"]
 
 
 class InformantRewardViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = InformantReward.objects.select_related("offense", "informant")
     serializer_class = InformantRewardSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["offense", "informant"]
 
 
 class PatrolLogViewSet(viewsets.ModelViewSet):
     queryset = PatrolLog.objects.select_related("watcher", "offense")
     serializer_class = PatrolLogSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["watcher", "patrol_date"]

@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeOfficer
+from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeChair
 from apps.visitors.models import OfficialGuestLog, VisitorEntry, VisitorFeeRate
 from apps.visitors.serializers import (
     OfficialGuestLogSerializer,
@@ -15,16 +15,16 @@ from apps.visitors.serializers import (
 class VisitorFeeRateViewSet(viewsets.ModelViewSet):
     queryset = VisitorFeeRate.objects.all()
     serializer_class = VisitorFeeRateSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
 
 
 class VisitorEntryViewSet(viewsets.ModelViewSet):
     queryset = VisitorEntry.objects.all()
     serializer_class = VisitorEntrySerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["entry_date", "visit_purpose", "fee_waived"]
 
-    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeChair])
     def log_and_collect(self, request):
         from apps.core.services import record_visitor_entry
 
@@ -41,6 +41,6 @@ class VisitorEntryViewSet(viewsets.ModelViewSet):
 class OfficialGuestLogViewSet(viewsets.ModelViewSet):
     queryset = OfficialGuestLog.objects.all()
     serializer_class = OfficialGuestLogSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["visit_start_date", "visit_end_date"]
     search_fields = ["visitor_name", "designation"]

@@ -13,7 +13,7 @@ The Members API manages households, individual members, and membership renewals 
 
 All endpoints require authentication. Permission classes vary by endpoint:
 
-- **Public Staff**: `IsCommitteeOfficer` - Full access to all endpoints
+- **Public Staff**: `IsCommitteeChair` - Full access to all endpoints
 - **DFO Viewer**: `IsDFOViewer` - Read-only access to member statistics
 - **Member Users**: `IsMember` - Limited access to their own member profile
 - **Sub-Committee Members**: `IsSubCommitteeMember` - Limited access to their own profile
@@ -88,7 +88,7 @@ Tracks annual membership renewals and fee payments.
 GET /api/members/households/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer`
 
 **Query Parameters:**
 - `wealth_class` - Filter by wealth class: `rich`, `medium`, `poor`
@@ -138,7 +138,7 @@ GET /api/members/households/
 GET /api/members/households/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer`
 
 **Response:** Single household object (see List response format)
 
@@ -147,7 +147,7 @@ GET /api/members/households/{id}/
 POST /api/members/households/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 **Request Body:**
 ```json
@@ -179,14 +179,14 @@ PUT /api/members/households/{id}/
 PATCH /api/members/households/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 #### Delete Household
 ```
 DELETE /api/members/households/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 **Note:** Households with members cannot be deleted.
 
@@ -199,7 +199,7 @@ DELETE /api/members/households/{id}/
 GET /api/members/members/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer`
 
 **Query Parameters:**
 - `household` - Filter by household ID
@@ -228,7 +228,7 @@ GET /api/members/members/
 GET /api/members/members/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer`
 
 **Detail Response:**
 ```json
@@ -248,7 +248,7 @@ GET /api/members/members/{id}/
 POST /api/members/members/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 **Request Body:**
 ```json
@@ -265,7 +265,7 @@ PUT /api/members/members/{id}/
 PATCH /api/members/members/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer | Own member profile`
+**Permissions:** `IsCommitteeChair | Own member profile`
 
 **Request Body:**
 ```json
@@ -280,7 +280,7 @@ PATCH /api/members/members/{id}/
 DELETE /api/members/members/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 ---
 
@@ -291,7 +291,7 @@ DELETE /api/members/members/{id}/
 GET /api/members/membership-renewals/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 **Query Parameters:**
 - `fiscal_year` - Filter by fiscal year (e.g., "2083/84")
@@ -324,14 +324,14 @@ GET /api/members/membership-renewals/
 GET /api/members/membership-renewals/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 #### Create Renewal (Administrative)
 ```
 POST /api/members/membership-renewals/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 **Request Body:**
 ```json
@@ -351,14 +351,14 @@ PUT /api/members/membership-renewals/{id}/
 PATCH /api/members/membership-renewals/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 #### Delete Renewal
 ```
 DELETE /api/members/membership-renewals/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer`
+**Permissions:** `IsCommitteeChair`
 
 ---
 
@@ -369,7 +369,7 @@ DELETE /api/members/membership-renewals/{id}/
 GET /api/members/household-stats/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Query Parameters:**
 - `wealth_class` - Filter by wealth class: `rich`, `medium`, `poor`
@@ -384,7 +384,7 @@ GET /api/members/household-stats/
 GET /api/members/household-stats/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Response:** Household with aggregated member statistics
 ```json
@@ -459,7 +459,7 @@ GET /api/members/household-stats/{id}/
 GET /api/members/member-stats/{id}/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Response:** Detailed member profile with individual statistics
 ```json
@@ -512,7 +512,7 @@ GET /api/members/member-stats/{id}/
 GET /api/members/stats/aggregate/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Query Parameters:**
 - `status` - Filter by household status
@@ -574,7 +574,7 @@ GET /api/members/stats/aggregate/
 GET /api/members/stats/by_wealth_class/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Response:**
 ```json
@@ -608,7 +608,7 @@ GET /api/members/stats/by_wealth_class/
 GET /api/members/stats/by_membership_type/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Response:**
 ```json
@@ -653,7 +653,7 @@ GET /api/members/stats/by_membership_type/
 GET /api/members/stats/by_status/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Response:**
 ```json
@@ -703,7 +703,7 @@ GET /api/members/stats/by_status/
 GET /api/members/user-stats/aggregate/
 ```
 
-**Permissions:** `IsCommitteeOfficer | IsDFOViewer`
+**Permissions:** `IsCommitteeChair | IsDFOViewer`
 
 **Response:**
 ```json

@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.models import SystemConfig, User
-from apps.core.permissions import IsCommitteeOfficer
+from apps.core.permissions import IsCommitteeChair
 from apps.core.serializers import (
     LoginSerializer,
     SystemConfigSerializer,
@@ -17,7 +17,7 @@ from apps.core.serializers import (
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsCommitteeOfficer]
+    permission_classes = [IsCommitteeChair]
     search_fields = ["email", "first_name", "last_name"]
 
     def get_serializer_class(self):
@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class SystemConfigViewSet(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     queryset = SystemConfig.objects.all()
     serializer_class = SystemConfigSerializer
-    permission_classes = [IsCommitteeOfficer]
+    permission_classes = [IsCommitteeChair]
 
     def get_object(self):
         return SystemConfig.get()

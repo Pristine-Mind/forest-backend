@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.models import SystemConfig
-from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeOfficer
+from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeChair
 from apps.inventory.models import PriceRate, Sale, StockLedger, StockTransaction, TimberLogEntry
 from apps.inventory.serializers import (
     FiscalYearStockAnalysisSerializer,
@@ -26,7 +26,7 @@ from apps.inventory.serializers import (
 class StockLedgerViewSet(viewsets.ModelViewSet):
     queryset = StockLedger.objects.select_related("species")
     serializer_class = StockLedgerSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["species", "grade"]
     search_fields = ["species__species_name", "grade"]
 
@@ -393,10 +393,10 @@ class StockLedgerViewSet(viewsets.ModelViewSet):
 class StockTransactionViewSet(viewsets.ModelViewSet):
     queryset = StockTransaction.objects.select_related("stock")
     serializer_class = StockTransactionSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["stock", "transaction_type", "reference_type"]
 
-    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeChair])
     def record_adjustment(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -407,18 +407,18 @@ class StockTransactionViewSet(viewsets.ModelViewSet):
 class PriceRateViewSet(viewsets.ModelViewSet):
     queryset = PriceRate.objects.select_related("species")
     serializer_class = PriceRateSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["species", "grade", "buyer_type"]
 
 
 class SaleViewSet(viewsets.ModelViewSet):
     queryset = Sale.objects.select_related("species", "member")
     serializer_class = SaleSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["buyer_type", "species", "grade", "payment_status"]
     search_fields = ["buyer_name", "member__full_name"]
 
-    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=False, methods=["post"], permission_classes=[IsCommitteeChair])
     def record(self, request):
         from apps.core.services import record_sale
 

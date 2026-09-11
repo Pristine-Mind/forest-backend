@@ -8,13 +8,13 @@ from rest_framework.response import Response
 from apps.billing.models import FeeCollection, Receipt
 from apps.billing.serializers import FeeCollectionSerializer, ReceiptSerializer
 from apps.billing.tasks import generate_receipt_pdf_task
-from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeOfficer
+from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeChair
 
 
 class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Receipt.objects.all()
     serializer_class = ReceiptSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["reference_type", "issued_date"]
     search_fields = ["receipt_no"]
     lookup_field = "receipt_no"
@@ -44,7 +44,7 @@ class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
 class FeeCollectionViewSet(viewsets.ModelViewSet):
     queryset = FeeCollection.objects.select_related("member")
     serializer_class = FeeCollectionSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["fee_type", "payment_status", "member"]
     search_fields = ["member__full_name", "member__household__citizenship_no"]
 

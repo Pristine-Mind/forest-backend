@@ -56,11 +56,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Custom user model supporting the CFUG RBAC roles."""
 
     class Role(models.TextChoices):
-        COMMITTEE_OFFICER = "committee_officer", _("Committee Officer")
+        COMMITTEE_CHAIR = "committee_chair", _("Committee Chair")
         MEMBER = "member", _("Member")
         SUB_COMMITTEE_MEMBER = "sub_committee_member", _("Sub-committee Member")
         DFO_VIEWER = "dfo_viewer", _("DFO Viewer")
         ADMIN = "admin", _("System Administrator")
+        STAFF = "staff", _("Staff")
+        SECRETARY = "secretary", _("Secretary")
 
     email = models.EmailField(_("email address"), unique=True)
     first_name = models.CharField(_("first name"), max_length=150, blank=True)
@@ -106,8 +108,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip() or self.email
 
-    def is_committee_officer(self) -> bool:
-        return self.role == self.Role.COMMITTEE_OFFICER or self.is_superuser
+    def is_committee_chair(self) -> bool:
+        return self.role == self.Role.COMMITTEE_CHAIR
 
     def is_dfo_viewer(self) -> bool:
         return self.role == self.Role.DFO_VIEWER or self.is_superuser

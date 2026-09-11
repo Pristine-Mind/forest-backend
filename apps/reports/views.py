@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeOfficer
+from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeChair
 from apps.forest.models import TreeCountRegister
 from apps.fund.models import Audit, CashTransaction
 from apps.governance.models import CommitteeMember, Election
@@ -18,7 +18,7 @@ from apps.visitors.models import OfficialGuestLog, VisitorEntry
 
 
 class ReportsViewSet(viewsets.ViewSet):
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
 
     def _pdf_response(self, buffer, filename):
         response = HttpResponse(buffer, content_type="application/pdf")
