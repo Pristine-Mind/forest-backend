@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeOfficer, IsMember
+from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeChair, IsMember
 from apps.harvest.models import HarvestRequest
 from apps.harvest.serializers import HarvestRequestSerializer
 
@@ -12,13 +12,13 @@ from apps.harvest.serializers import HarvestRequestSerializer
 class HarvestRequestViewSet(viewsets.ModelViewSet):
     queryset = HarvestRequest.objects.select_related("member", "species", "approved_by")
     serializer_class = HarvestRequestSerializer
-    permission_classes = [IsCommitteeOfficer | IsMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsMember | IsAuthenticatedReadOnly]
     filterset_fields = ["source_type", "status", "species", "requested_date"]
     search_fields = ["member__full_name", "species__species_name", "operation_name"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer():
+        if user.is_committee_chair() or user.is_dfo_viewer():
             return self.queryset
         if user.is_member_user():
             member = getattr(user, "member_profile", None)
@@ -37,7 +37,7 @@ class HarvestRequestViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeChair])
     def approve(self, request, pk=None):
         from apps.core.services import approve_harvest_request
 
@@ -52,7 +52,7 @@ class HarvestRequestViewSet(viewsets.ModelViewSet):
 
         return Response({"status": "approved"})
 
-    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeChair])
     def reject(self, request, pk=None):
         harvest_request = self.get_object()
         if harvest_request.status != HarvestRequest.Status.PENDING:

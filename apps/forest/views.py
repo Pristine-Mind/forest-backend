@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from apps.core.permissions import (
     IsAuthenticatedReadOnly,
-    IsCommitteeOfficer,
+    IsCommitteeChair,
 )
 from apps.forest.models import (
     ForestBlock,
@@ -38,7 +38,7 @@ from apps.forest.serializers import (
 class ForestBlockViewSet(viewsets.ModelViewSet):
     queryset = ForestBlock.objects.all()
     serializer_class = ForestBlockSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["block_name"]
     search_fields = ["block_name"]
 
@@ -46,21 +46,21 @@ class ForestBlockViewSet(viewsets.ModelViewSet):
 class SpeciesViewSet(viewsets.ModelViewSet):
     queryset = Species.objects.all()
     serializer_class = SpeciesSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     search_fields = ["species_name", "scientific_name", "local_name"]
 
 
 class WildlifeSpeciesViewSet(viewsets.ModelViewSet):
     queryset = WildlifeSpecies.objects.all()
     serializer_class = WildlifeSpeciesSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     search_fields = ["species_name", "scientific_name", "local_name"]
 
 
 class OperationalPlanViewSet(viewsets.ModelViewSet):
     queryset = OperationalPlan.objects.all()
     serializer_class = OperationalPlanSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["valid_from", "valid_to"]
 
 
@@ -72,7 +72,7 @@ class TreeCountRegisterViewSet(viewsets.ModelViewSet):
 
     queryset = TreeCountRegister.objects.select_related("operational_plan", "species").all()
     serializer_class = TreeCountRegisterSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
 
     # Filtering and searching
     filterset_fields = [
@@ -327,7 +327,7 @@ class TreeCountRegisterViewSet(viewsets.ModelViewSet):
 class TreeCountHistoryViewSet(viewsets.ModelViewSet):
     queryset = TreeCountHistory.objects.select_related("record", "record__species", "record__block", "reference_harvest")
     serializer_class = TreeCountHistorySerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["record", "change_date", "record__block", "record__species"]
     ordering_fields = ["change_date"]
 
@@ -337,7 +337,7 @@ class HarvestLogViewSet(viewsets.ModelViewSet):
         "tree_record", "tree_record__species", "tree_record__block", "reference_harvest_request"
     )
     serializer_class = HarvestLogSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["tree_record", "harvest_date", "tree_record__block", "tree_record__species"]
     ordering_fields = ["harvest_date"]
 
@@ -345,7 +345,7 @@ class HarvestLogViewSet(viewsets.ModelViewSet):
 class TimberCollectionViewSet(viewsets.ModelViewSet):
     queryset = TimberCollection.objects.select_related("block", "species").all()
     serializer_class = TimberCollectionSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
 
     # Filtering and searching
     filterset_fields = ["block", "species"]
@@ -505,7 +505,7 @@ class PoleCountRegisterViewSet(viewsets.ModelViewSet):
 
     queryset = PoleCountRegister.objects.select_related("block", "operational_plan", "species").all()
     serializer_class = PoleCountRegisterSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
 
     # Filtering and searching
     filterset_fields = [
@@ -843,7 +843,7 @@ class PoleCountRegisterViewSet(viewsets.ModelViewSet):
 
 class ForestBoundaryViewSet(viewsets.ModelViewSet):
     queryset = ForestBoundary.objects.select_related("forest_block")
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["boundary_type", "forest_block"]
 
     def get_serializer_class(self):

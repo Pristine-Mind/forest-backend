@@ -1,11 +1,11 @@
 from rest_framework import permissions
 
 
-class IsCommitteeOfficer(permissions.BasePermission):
-    """Full access for committee officers and superusers."""
+class IsCommitteeChair(permissions.BasePermission):
+    """Full access for committee chairs and superusers."""
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.is_committee_officer())
+        return bool(request.user and request.user.is_authenticated and request.user.is_committee_chair())
 
 
 class IsDFOViewer(permissions.BasePermission):
@@ -30,7 +30,7 @@ class IsMember(permissions.BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
-            and (request.user.is_member_user() or request.user.is_committee_officer())
+            and (request.user.is_member_user() or request.user.is_committee_chair())
         )
 
 
@@ -41,7 +41,7 @@ class IsSubCommitteeMember(permissions.BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
-            and (request.user.is_sub_committee_user() or request.user.is_committee_officer() or request.user.is_dfo_viewer())
+            and (request.user.is_sub_committee_user() or request.user.is_committee_chair() or request.user.is_dfo_viewer())
         )
 
 
@@ -58,3 +58,14 @@ class IsAuthenticatedReadOnly(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return request.method in permissions.SAFE_METHODS
+
+
+class IsChair(permissions.BasePermission):
+    """Permission for users with COMMITTEE_CHAIR role."""
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+        
+        # Allow if user role is COMMITTEE_CHAIR or superuser
+        return request.user.is_committee_chair()

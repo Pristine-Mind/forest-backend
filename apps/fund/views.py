@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 
 from apps.core.permissions import (
     IsAuthenticatedReadOnly,
-    IsCommitteeOfficer,
+    IsCommitteeChair,
     IsSubCommitteeMember,
 )
 from apps.fund.models import (
@@ -45,19 +45,19 @@ def _is_fund_subcommittee_user(user):
 class FundAllocationRuleViewSet(viewsets.ModelViewSet):
     queryset = FundAllocationRule.objects.all()
     serializer_class = FundAllocationRuleSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
 
 
 class BankAccountViewSet(viewsets.ModelViewSet):
     queryset = BankAccount.objects.all()
     serializer_class = BankAccountSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
 
 
 class CashTransactionViewSet(viewsets.ModelViewSet):
     queryset = CashTransaction.objects.all()
     serializer_class = CashTransactionSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["type", "source_or_purpose"]
 
     def get_queryset(self):
@@ -70,31 +70,31 @@ class CashTransactionViewSet(viewsets.ModelViewSet):
 class AuditViewSet(viewsets.ModelViewSet):
     queryset = Audit.objects.all()
     serializer_class = AuditSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["fiscal_year", "audit_tier"]
 
 
 class PublicAuditViewSet(viewsets.ModelViewSet):
     queryset = PublicAudit.objects.all()
     serializer_class = PublicAuditSerializer
-    permission_classes = [IsCommitteeOfficer | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
     filterset_fields = ["fiscal_year", "assembly_approval"]
 
 
 class BankTransactionViewSet(viewsets.ModelViewSet):
     queryset = BankTransaction.objects.all()
     serializer_class = BankTransactionSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["transaction_date"]
 
 
 class BudgetAllocationViewSet(viewsets.ModelViewSet):
     queryset = BudgetAllocation.objects.all()
     serializer_class = BudgetAllocationSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["fiscal_year", "work_status"]
 
-    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeOfficer])
+    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeChair])
     def approve(self, request, pk=None):
         budget_allocation = self.get_object()
         if budget_allocation.work_status != BudgetAllocation.WorkStatus.PLANNED:

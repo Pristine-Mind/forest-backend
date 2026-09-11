@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from apps.core.models import SystemConfig, User
 from apps.core.permissions import (
-    IsCommitteeOfficer,
+    IsCommitteeChair,
     IsDFOViewer,
     IsMember,
     IsSubCommitteeMember,
@@ -40,14 +40,14 @@ def _member_filter_for_user(user):
 class HouseholdViewSet(viewsets.ModelViewSet):
     queryset = Household.objects.order_by("english_name")
     serializer_class = HouseholdSerializer
-    permission_classes = [IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer]
+    permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filterset_fields = ["wealth_class", "tole", "status"]
     search_fields = ["household_head_name", "tole", "english_name", "citizenship_no"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer():
+        if user.is_committee_chair() or user.is_dfo_viewer():
             return self.queryset
         return self.queryset.filter(_member_filter_for_user(user))
 
@@ -61,14 +61,14 @@ class HouseholdViewSet(viewsets.ModelViewSet):
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.select_related("household", "user")
     serializer_class = MemberSerializer
-    permission_classes = [IsCommitteeOfficer | IsMember | IsSubCommitteeMember | IsDFOViewer]
+    permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     filterset_fields = ["household", "household__wealth_class", "household__membership_type", "household__membership_status"]
     search_fields = ["full_name", "household__citizenship_no"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer():
+        if user.is_committee_chair() or user.is_dfo_viewer():
             return self.queryset
         if user.is_member_user() or user.is_sub_committee_user():
             return self.queryset.filter(user=user)
@@ -83,7 +83,7 @@ class MemberViewSet(viewsets.ModelViewSet):
 class MembershipRenewalViewSet(viewsets.ModelViewSet):
     queryset = MembershipRenewal.objects.select_related("member")
     serializer_class = MembershipRenewalSerializer
-    permission_classes = [IsCommitteeOfficer]
+    permission_classes = [IsCommitteeChair]
     filterset_fields = ["fiscal_year", "fee_tier"]
     search_fields = ["member__full_name", "member__citizenship_no"]
 
@@ -99,13 +99,13 @@ class MemberDetailStatsViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Member.objects.select_related("household", "user")
     serializer_class = MemberDetailStatsSerializer
-    permission_classes = [IsCommitteeOfficer | IsDFOViewer]
+    permission_classes = [IsCommitteeChair | IsDFOViewer]
     filterset_fields = ["household__membership_type", "household__membership_status", "household__wealth_class", "household"]
     search_fields = ["full_name", "household__citizenship_no"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer():
+        if user.is_committee_chair() or user.is_dfo_viewer():
             return self.queryset
         return self.queryset.none()
 
@@ -115,13 +115,13 @@ class HouseholdDetailStatsViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = Household.objects.prefetch_related("members").all()
     serializer_class = HouseholdDetailStatsSerializer
-    permission_classes = [IsCommitteeOfficer | IsDFOViewer]
+    permission_classes = [IsCommitteeChair | IsDFOViewer]
     filterset_fields = ["wealth_class", "status", "membership_type", "membership_status"]
     search_fields = ["household_head_name", "tole", "citizenship_no"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer():
+        if user.is_committee_chair() or user.is_dfo_viewer():
             return self.queryset
         if user.is_member_user() or user.is_sub_committee_user():
             member = getattr(user, "member_profile", None)
@@ -134,7 +134,7 @@ class HouseholdDetailStatsViewSet(viewsets.ReadOnlyModelViewSet):
 class HouseholdStatsViewSet(viewsets.ViewSet):
     """Provides aggregate statistics across households with member data aggregation."""
 
-    permission_classes = [IsCommitteeOfficer | IsDFOViewer]
+    permission_classes = [IsCommitteeChair | IsDFOViewer]
 
     @action(detail=False, methods=["get"])
     def aggregate(self, request):
@@ -337,7 +337,7 @@ class HouseholdStatsViewSet(viewsets.ViewSet):
 class UserMemberStatsViewSet(viewsets.ViewSet):
     """Provides statistics for users with member role."""
 
-    permission_classes = [IsCommitteeOfficer | IsDFOViewer]
+    permission_classes = [IsCommitteeChair | IsDFOViewer]
 
     @action(detail=False, methods=["get"])
     def aggregate(self, request):

@@ -2,7 +2,7 @@ from rest_framework import viewsets
 
 from apps.core.permissions import (
     IsAuthenticatedReadOnly,
-    IsCommitteeOfficer,
+    IsCommitteeChair,
     IsMember,
     IsSubCommitteeMember,
 )
@@ -26,12 +26,12 @@ def _household_for_user(user):
 class RevolvingFundLoanViewSet(viewsets.ModelViewSet):
     queryset = RevolvingFundLoan.objects.select_related("household")
     serializer_class = RevolvingFundLoanSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsMember | IsAuthenticatedReadOnly]
     filterset_fields = ["status", "issue_date"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer() or user.is_sub_committee_user():
+        if user.is_committee_chair() or user.is_dfo_viewer() or user.is_sub_committee_user():
             return self.queryset
         household = _household_for_user(user)
         if household:
@@ -42,12 +42,12 @@ class RevolvingFundLoanViewSet(viewsets.ModelViewSet):
 class LivelihoodProgramRecordViewSet(viewsets.ModelViewSet):
     queryset = LivelihoodProgramRecord.objects.select_related("household")
     serializer_class = LivelihoodProgramRecordSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsMember | IsAuthenticatedReadOnly]
     filterset_fields = ["program_type", "program_date"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer() or user.is_sub_committee_user():
+        if user.is_committee_chair() or user.is_dfo_viewer() or user.is_sub_committee_user():
             return self.queryset
         household = _household_for_user(user)
         if household:
@@ -58,13 +58,13 @@ class LivelihoodProgramRecordViewSet(viewsets.ModelViewSet):
 class PovertyGroupAgreementViewSet(viewsets.ModelViewSet):
     queryset = PovertyGroupAgreement.objects.all()
     serializer_class = PovertyGroupAgreementSerializer
-    permission_classes = [IsCommitteeOfficer | IsSubCommitteeMember | IsMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsMember | IsAuthenticatedReadOnly]
     filterset_fields = ["status"]
     search_fields = ["subgroup_name"]
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_committee_officer() or user.is_dfo_viewer() or user.is_sub_committee_user():
+        if user.is_committee_chair() or user.is_dfo_viewer() or user.is_sub_committee_user():
             return self.queryset
         household = _household_for_user(user)
         if household:
