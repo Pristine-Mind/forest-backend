@@ -69,3 +69,47 @@ class IsChair(permissions.BasePermission):
         
         # Allow if user role is COMMITTEE_CHAIR or superuser
         return request.user.is_committee_chair()
+
+
+class BankTransactionPermission(permissions.BasePermission):
+    """
+    Bank Transaction permissions:
+    - Chair: full access (create, read, update, delete)
+    - Secretary and Staff: can create and update, but not delete
+    - Others: read-only access
+    """
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        if request.method in ["POST", "PUT", "PATCH"]:
+            return (
+                request.user.is_committee_chair()
+                or request.user.is_secretary()
+                or request.user.is_staff_user()
+            )
+
+        if request.method == "DELETE":
+            return request.user.is_committee_chair()
+
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        if request.method in ["PUT", "PATCH"]:
+            return (
+                request.user.is_committee_chair()
+                or request.user.is_secretary()
+                or request.user.is_staff_user()
+            )
+
+        if request.method == "DELETE":
+            return request.user.is_committee_chair()
+
+        return False
