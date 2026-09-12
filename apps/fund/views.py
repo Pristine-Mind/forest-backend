@@ -85,7 +85,7 @@ class PublicAuditViewSet(viewsets.ModelViewSet):
 class BankTransactionViewSet(viewsets.ModelViewSet):
     queryset = BankTransaction.objects.all()
     serializer_class = BankTransactionSerializer
-    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
+    permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly | BankTransactionPermission]
     filterset_fields = ["transaction_date"]
 
     def perform_create(self, serializer):
