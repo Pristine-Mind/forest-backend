@@ -120,6 +120,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_sub_committee_user(self) -> bool:
         return self.role == self.Role.SUB_COMMITTEE_MEMBER
 
+    def is_secretary(self) -> bool:
+        return self.role == self.Role.SECRETARY
+
+    def is_staff_user(self) -> bool:
+        return self.role == self.Role.STAFF
+
 
 class SystemConfig(AbstractBaseModel):
     """Singleton holding all CFUG-bylaws configurable values."""

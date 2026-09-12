@@ -7,6 +7,7 @@ from apps.core.permissions import (
     IsAuthenticatedReadOnly,
     IsCommitteeChair,
     IsSubCommitteeMember,
+    BankTransactionPermission,
 )
 from apps.fund.models import (
     Audit,
@@ -86,6 +87,10 @@ class BankTransactionViewSet(viewsets.ModelViewSet):
     serializer_class = BankTransactionSerializer
     permission_classes = [IsCommitteeChair | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["transaction_date"]
+
+    def perform_create(self, serializer):
+        """Automatically set created_by to the current user when creating a transaction."""
+        serializer.save(created_by=self.request.user)
 
 
 class BudgetAllocationViewSet(viewsets.ModelViewSet):
