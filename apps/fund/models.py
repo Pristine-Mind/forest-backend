@@ -127,6 +127,12 @@ class CashTransaction(AbstractBaseModel):
         CHEQUE = "cheque", _("Cheque")
         DIGITAL_WALLET = "digital_wallet", _("Digital Wallet")
 
+    class ApprovalStatus(models.TextChoices):
+        DRAFT = "draft", _("Draft")
+        SUBMITTED = "submitted", _("Submitted for Approval")
+        APPROVED = "approved", _("Approved")
+        REJECTED = "rejected", _("Rejected")
+
     type = models.CharField(max_length=16, choices=Type.choices)
     payment_type = models.CharField(
         max_length=16,
@@ -137,6 +143,23 @@ class CashTransaction(AbstractBaseModel):
     source_or_purpose = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
     requires_committee_approval = models.BooleanField(default=False)
+    
+    # Approval workflow
+    approval_status = models.CharField(
+        max_length=16,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.DRAFT,
+    )
+    submitted_for_approval_at = models.DateTimeField(null=True, blank=True)
+    submitted_by = models.ForeignKey(
+        "core.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="submitted_cash_transactions",
+        help_text="User who submitted for approval (secretary/staff)",
+    )
+    
     approved_by = models.ForeignKey(
         "core.User",
         on_delete=models.SET_NULL,
@@ -144,6 +167,9 @@ class CashTransaction(AbstractBaseModel):
         blank=True,
         related_name="approved_cash_transactions",
     )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True, help_text="Reason for rejection if rejected")
+    
     cheque_number = models.CharField(
         max_length=64,
         blank=True,
