@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.models import SystemConfig
+from apps.core.models import SystemConfig, Notification
 from apps.fund.models import (
     Audit,
     BankAccount,
@@ -40,7 +40,8 @@ class BankAccountSerializer(serializers.ModelSerializer):
 
 
 class CashTransactionSerializer(serializers.ModelSerializer):
-    requires_committee_approval = serializers.BooleanField(read_only=True)
+    submitted_by_name = serializers.CharField(source='submitted_by.full_name', read_only=True)
+    approved_by_name = serializers.CharField(source='approved_by.full_name', read_only=True)
 
     class Meta:
         model = CashTransaction
@@ -49,24 +50,45 @@ class CashTransactionSerializer(serializers.ModelSerializer):
             "type",
             "source_or_purpose",
             "amount",
+            "payment_type",
+            "cheque_number",
+            "cheque_bank_name",
             "requires_committee_approval",
+            "approval_status",
+            "submitted_for_approval_at",
+            "submitted_by",
+            "submitted_by_name",
             "approved_by",
+            "approved_by_name",
+            "approved_at",
+            "rejection_reason",
             "created_at",
             "updated_at",
         ]
+        read_only_fields = [
+            "requires_committee_approval",
+            "approval_status",
+            "submitted_for_approval_at",
+            "submitted_by",
+            "submitted_by_name",
+            "approved_by",
+            "approved_by_name",
+            "approved_at",
+            "rejection_reason",
+        ]
 
     def validate(self, attrs):
-        amount = attrs.get("amount")
-        approved_by = attrs.get("approved_by")
-        config = SystemConfig.get()
-        if (
-            amount
-            and amount > min(config.cash_chair_approval_limit, config.cash_treasurer_approval_limit)
-            and not approved_by
-        ):
-            raise serializers.ValidationError(
-                {"approved_by": "Transactions above the configured limit require committee approval."}
-            )
+        # amount = attrs.get("amount")
+        # approval_status = attrs.get("approval_status")
+        # config = SystemConfig.get()
+        # if (
+        #     amount
+        #     and amount > min(config.cash_chair_approval_limit, config.cash_treasurer_approval_limit)
+        #     and not approval_status == CashTransaction.ApprovalStatus.APPROVED
+        # ):
+        #     raise serializers.ValidationError(
+        #         {"amount": "Large amounts require committee approval. Use the 'submit for approval' action."}
+        #     )
         return attrs
 
 
@@ -138,4 +160,40 @@ class BudgetAllocationSerializer(serializers.ModelSerializer):
             "approved_by",
             "created_at",
             "updated_at",
+        ]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    recipient_name = serializers.CharField(source='recipient.full_name', read_only=True)
+    actioned_by_name = serializers.CharField(source='actioned_by.full_name', read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "recipient",
+            "recipient_name",
+            "notification_type",
+            "title",
+            "description",
+            "status",
+            "content_type",
+            "object_id",
+            "action_required",
+            "action_deadline",
+            "read_at",
+            "actioned_at",
+            "actioned_by",
+            "actioned_by_name",
+            "action_notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "recipient",
+            "recipient_name",
+            "read_at",
+            "actioned_at",
+            "actioned_by",
+            "actioned_by_name",
         ]

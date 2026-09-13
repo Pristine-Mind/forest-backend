@@ -30,7 +30,7 @@ class IsMember(permissions.BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
-            and (request.user.is_member_user() or request.user.is_committee_chair())
+            and (request.user.is_staff_user() or request.user.is_secretary())
         )
 
 

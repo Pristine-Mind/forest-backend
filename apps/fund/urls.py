@@ -9,6 +9,7 @@ from apps.fund.views import (
     FundAllocationRuleViewSet,
     PublicAuditViewSet,
     BudgetAllocationViewSet,
+    NotificationViewSet,
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ router.register(r"cash-transactions", CashTransactionViewSet)
 router.register(r"audits", AuditViewSet)
 router.register(r"public-audits", PublicAuditViewSet)
 router.register(r"budget-allocations", BudgetAllocationViewSet)
+router.register(r"notifications", NotificationViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

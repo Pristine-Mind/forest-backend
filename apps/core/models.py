@@ -224,6 +224,85 @@ class SystemConfig(AbstractBaseModel):
         return f"{fy_start}/{str(fy_end)[-2:]}"
 
 
+class Notification(AbstractBaseModel):
+    """Centralized notification system for all types of notifications."""
+
+    class Type(models.TextChoices):
+        CASH_APPROVAL = "cash_approval", _("Cash Transaction Approval Request")
+        BANK_APPROVAL = "bank_approval", _("Bank Transaction Approval Request")
+        BUDGET_APPROVAL = "budget_approval", _("Budget Allocation Approval Request")
+        HARVEST_APPROVAL = "harvest_approval", _("Harvest Approval Request")
+        MEMBER_REQUEST = "member_request", _("Member Request")
+        SYSTEM_ALERT = "system_alert", _("System Alert")
+        OFFENSE_REPORT = "offense_report", _("Offense Report")
+        ELECTION_NOTICE = "election_notice", _("Election Notice")
+        CHEQUE_NOTIFICATION = "cheque", _("Cheque Payment Notification")
+        DIGITAL_WALLET_NOTIFICATION = "digital_wallet", _("Digital Wallet Payment Notification")
+
+    class Status(models.TextChoices):
+        UNREAD = "unread", _("Unread")
+        READ = "read", _("Read")
+        ACTIONED = "actioned", _("Actioned")
+
+    recipient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        help_text="User receiving the notification (typically chair)",
+    )
+    notification_type = models.CharField(max_length=32, choices=Type.choices)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNREAD)
+    
+    # Link to the related object (generic foreign key)
+    content_type = models.CharField(max_length=64, blank=True, help_text="Model name (e.g., 'CashTransaction')")
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    
+    # Action tracking
+    action_required = models.BooleanField(default=False)
+    action_deadline = models.DateTimeField(null=True, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    actioned_at = models.DateTimeField(null=True, blank=True)
+    actioned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="actioned_notifications",
+    )
+    action_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        indexes = [
+            models.Index(fields=["recipient", "status"]),
+            models.Index(fields=["recipient", "notification_type"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.title} - {self.recipient.email}"
+
+    def mark_as_read(self):
+        """Mark notification as read."""
+        if self.status == self.Status.UNREAD:
+            from django.utils import timezone
+            self.status = self.Status.READ
+            self.read_at = timezone.now()
+            self.save(update_fields=["status", "read_at"])
+
+    def mark_as_actioned(self, actioned_by, action_notes=""):
+        """Mark notification as actioned."""
+        from django.utils import timezone
+        self.status = self.Status.ACTIONED
+        self.actioned_by = actioned_by
+        self.actioned_at = timezone.now()
+        self.action_notes = action_notes
+        self.save(update_fields=["status", "actioned_by", "actioned_at", "action_notes"])
+
+
 class AuditLog(AbstractBaseModel):
     """Audit trail for sensitive changes."""
 
