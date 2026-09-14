@@ -28,9 +28,7 @@ class IsMember(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return bool(
-            request.user
-            and request.user.is_authenticated
-            and (request.user.is_staff_user() or request.user.is_secretary())
+            request.user and request.user.is_authenticated and (request.user.is_staff_user() or request.user.is_secretary())
         )
 
 
@@ -66,7 +64,7 @@ class IsChair(permissions.BasePermission):
     def has_permission(self, request, view):
         if not (request.user and request.user.is_authenticated):
             return False
-        
+
         # Allow if user role is COMMITTEE_CHAIR or superuser
         return request.user.is_committee_chair()
 
@@ -87,11 +85,7 @@ class BankTransactionPermission(permissions.BasePermission):
             return True
 
         if request.method in ["POST", "PUT", "PATCH"]:
-            return (
-                request.user.is_committee_chair()
-                or request.user.is_secretary()
-                or request.user.is_staff_user()
-            )
+            return request.user.is_committee_chair() or request.user.is_secretary() or request.user.is_staff_user()
 
         if request.method == "DELETE":
             return request.user.is_committee_chair()
@@ -103,11 +97,7 @@ class BankTransactionPermission(permissions.BasePermission):
             return True
 
         if request.method in ["PUT", "PATCH"]:
-            return (
-                request.user.is_committee_chair()
-                or request.user.is_secretary()
-                or request.user.is_staff_user()
-            )
+            return request.user.is_committee_chair() or request.user.is_secretary() or request.user.is_staff_user()
 
         if request.method == "DELETE":
             return request.user.is_committee_chair()

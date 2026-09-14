@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -22,7 +24,13 @@ class CommitteeMember(AbstractBaseModel):
         VACANT = "vacant", _("Vacant")
         REMOVED = "removed", _("Removed")
 
-    member = models.ForeignKey("members.Household", on_delete=models.CASCADE, related_name="committee_roles")
+    # Generic relation to support both Household and Member
+    content_type = models.ForeignKey(
+        ContentType, on_delete=models.CASCADE, limit_choices_to={"model__in": ("household", "member")}
+    )
+    object_id = models.PositiveIntegerField()
+    member_object = GenericForeignKey("content_type", "object_id")
+
     position = models.CharField(max_length=20, choices=Position.choices)
     gender = models.CharField(max_length=16)
     caste_ethnicity = models.CharField(max_length=255, blank=True)
@@ -36,9 +44,45 @@ class CommitteeMember(AbstractBaseModel):
         ordering = ["-term_start", "position"]
         verbose_name = "Committee Member"
         verbose_name_plural = "Committee Members"
+        unique_together = [("content_type", "object_id")]
 
     def __str__(self) -> str:
-        return f"{self.member.household_head_name} - {self.position}"
+        return f"{self.get_member_name()} - {self.position}"
+
+    def get_member_name(self) -> str:
+        """Get name from either Household or Member"""
+        if self.member_object is None:
+            return "Unknown"
+
+        if hasattr(self.member_object, "household_head_name"):
+            # Household model
+            return self.member_object.household_head_name
+        elif hasattr(self.member_object, "full_name"):
+            # Member model
+            return self.member_object.full_name
+        return str(self.member_object)
+
+    def get_household(self):
+        """Get the associated Household (whether member_object is Household or Member)"""
+        from apps.members.models import Household, Member
+
+        if isinstance(self.member_object, Household):
+            return self.member_object
+        elif isinstance(self.member_object, Member):
+            return self.member_object.household
+        return None
+
+    def clean(self):
+        super().clean()
+        if not self.content_type:
+            raise ValidationError({"content_type": "Content type must be specified"})
+
+        # Allow only Household and Member models
+        allowed_models = {"household", "member"}
+        if self.content_type.model not in allowed_models:
+            raise ValidationError(
+                {"content_type": f"Can only link to Household or Member models, not {self.content_type.model}"}
+            )
 
 
 class Election(AbstractBaseModel):

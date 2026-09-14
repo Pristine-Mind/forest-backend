@@ -40,8 +40,8 @@ class BankAccountSerializer(serializers.ModelSerializer):
 
 
 class CashTransactionSerializer(serializers.ModelSerializer):
-    submitted_by_name = serializers.CharField(source='submitted_by.full_name', read_only=True)
-    approved_by_name = serializers.CharField(source='approved_by.full_name', read_only=True)
+    submitted_by_name = serializers.CharField(source="submitted_by.full_name", read_only=True)
+    approved_by_name = serializers.CharField(source="approved_by.full_name", read_only=True)
 
     class Meta:
         model = CashTransaction
@@ -124,7 +124,7 @@ class PublicAuditSerializer(serializers.ModelSerializer):
 
 
 class BankTransactionSerializer(serializers.ModelSerializer):
-    created_by_name = serializers.CharField(source='created_by.full_name', read_only=True)
+    created_by_name = serializers.CharField(source="created_by.full_name", read_only=True)
 
     class Meta:
         model = BankTransaction
@@ -164,8 +164,8 @@ class BudgetAllocationSerializer(serializers.ModelSerializer):
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    recipient_name = serializers.CharField(source='recipient.full_name', read_only=True)
-    actioned_by_name = serializers.CharField(source='actioned_by.full_name', read_only=True)
+    recipient_name = serializers.CharField(source="recipient.full_name", read_only=True)
+    actioned_by_name = serializers.CharField(source="actioned_by.full_name", read_only=True)
 
     class Meta:
         model = Notification

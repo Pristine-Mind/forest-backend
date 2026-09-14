@@ -79,20 +79,20 @@ class CashTransactionViewSet(viewsets.ModelViewSet):
     def submit_for_approval(self, request, pk=None):
         """Submit cash transaction for chair approval (staff/secretary only)."""
         transaction = self.get_object()
-        
+
         # Check if user is secretary or staff
         if not (request.user.is_secretary() or request.user.is_staff_user()):
             return response.Response(
                 {"detail": "Only secretary or staff can submit transactions for approval."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        
+
         if transaction.approval_status != CashTransaction.ApprovalStatus.DRAFT:
             return response.Response(
                 {"detail": f"Can only submit DRAFT transactions. Current status: {transaction.approval_status}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         transaction.approval_status = CashTransaction.ApprovalStatus.SUBMITTED
         transaction.submitted_for_approval_at = timezone.now()
         transaction.submitted_by = request.user
@@ -102,6 +102,7 @@ class CashTransactionViewSet(viewsets.ModelViewSet):
         chair_user = None
         try:
             from apps.core.models import User
+
             chair_user = User.objects.filter(role=User.Role.COMMITTEE_CHAIR).first()
         except Exception:
             pass
@@ -117,7 +118,7 @@ class CashTransactionViewSet(viewsets.ModelViewSet):
             else:
                 notification_type = Notification.Type.CASH_APPROVAL
                 description = f"{request.user.full_name} submitted a {transaction.type} transaction of {transaction.amount} for approval.\n\nPayment Method: {transaction.get_payment_type_display()}\nPurpose: {transaction.source_or_purpose}"
-            
+
             Notification.objects.create(
                 recipient=chair_user,
                 notification_type=notification_type,
@@ -135,13 +136,13 @@ class CashTransactionViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         """Approve cash transaction (chair only)."""
         transaction = self.get_object()
-        
+
         if transaction.approval_status != CashTransaction.ApprovalStatus.SUBMITTED:
             return response.Response(
                 {"detail": f"Can only approve SUBMITTED transactions. Current status: {transaction.approval_status}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         transaction.approval_status = CashTransaction.ApprovalStatus.APPROVED
         transaction.approved_by = request.user
         transaction.approved_at = timezone.now()
@@ -166,13 +167,13 @@ class CashTransactionViewSet(viewsets.ModelViewSet):
     def reject(self, request, pk=None):
         """Reject cash transaction (chair only)."""
         transaction = self.get_object()
-        
+
         if transaction.approval_status != CashTransaction.ApprovalStatus.SUBMITTED:
             return response.Response(
                 {"detail": f"Can only reject SUBMITTED transactions. Current status: {transaction.approval_status}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         rejection_reason = request.data.get("rejection_reason", "No reason provided")
         transaction.approval_status = CashTransaction.ApprovalStatus.REJECTED
         transaction.rejection_reason = rejection_reason
@@ -243,6 +244,7 @@ class BudgetAllocationViewSet(viewsets.ModelViewSet):
 
 class NotificationViewSet(viewsets.ModelViewSet):
     """Centralized notification system for all types of notifications (mostly for chair)."""
+
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticatedReadOnly | IsCommitteeChair]
@@ -265,35 +267,23 @@ class NotificationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"])
     def mark_all_as_read(self, request):
         """Mark all unread notifications as read for the current user."""
-        Notification.objects.filter(
-            recipient=request.user,
-            status=Notification.Status.UNREAD
-        ).update(
-            status=Notification.Status.READ,
-            read_at=timezone.now()
+        Notification.objects.filter(recipient=request.user, status=Notification.Status.UNREAD).update(
+            status=Notification.Status.READ, read_at=timezone.now()
         )
-        count = Notification.objects.filter(
-            recipient=request.user,
-            status=Notification.Status.READ
-        ).count()
+        count = Notification.objects.filter(recipient=request.user, status=Notification.Status.READ).count()
         return response.Response({"detail": f"Marked all notifications as read. Total: {count}"})
 
     @action(detail=False, methods=["get"])
     def unread_count(self, request):
         """Get count of unread notifications."""
-        unread_count = Notification.objects.filter(
-            recipient=request.user,
-            status=Notification.Status.UNREAD
-        ).count()
+        unread_count = Notification.objects.filter(recipient=request.user, status=Notification.Status.UNREAD).count()
         return response.Response({"unread_count": unread_count})
 
     @action(detail=False, methods=["get"])
     def pending_approvals(self, request):
         """Get all pending approvals (notifications requiring action)."""
         pending = Notification.objects.filter(
-            recipient=request.user,
-            status__in=[Notification.Status.UNREAD, Notification.Status.READ],
-            action_required=True
+            recipient=request.user, status__in=[Notification.Status.UNREAD, Notification.Status.READ], action_required=True
         ).order_by("-created_at")
         serializer = self.get_serializer(pending, many=True)
         return response.Response(serializer.data)
