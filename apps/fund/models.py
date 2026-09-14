@@ -143,7 +143,7 @@ class CashTransaction(AbstractBaseModel):
     source_or_purpose = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
     requires_committee_approval = models.BooleanField(default=False)
-    
+
     # Approval workflow
     approval_status = models.CharField(
         max_length=16,
@@ -159,7 +159,7 @@ class CashTransaction(AbstractBaseModel):
         related_name="submitted_cash_transactions",
         help_text="User who submitted for approval (secretary/staff)",
     )
-    
+
     approved_by = models.ForeignKey(
         "core.User",
         on_delete=models.SET_NULL,
@@ -169,7 +169,7 @@ class CashTransaction(AbstractBaseModel):
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True, help_text="Reason for rejection if rejected")
-    
+
     cheque_number = models.CharField(
         max_length=64,
         blank=True,

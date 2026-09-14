@@ -254,11 +254,11 @@ class Notification(AbstractBaseModel):
     title = models.CharField(max_length=255)
     description = models.TextField()
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.UNREAD)
-    
+
     # Link to the related object (generic foreign key)
     content_type = models.CharField(max_length=64, blank=True, help_text="Model name (e.g., 'CashTransaction')")
     object_id = models.PositiveIntegerField(null=True, blank=True)
-    
+
     # Action tracking
     action_required = models.BooleanField(default=False)
     action_deadline = models.DateTimeField(null=True, blank=True)
@@ -289,6 +289,7 @@ class Notification(AbstractBaseModel):
         """Mark notification as read."""
         if self.status == self.Status.UNREAD:
             from django.utils import timezone
+
             self.status = self.Status.READ
             self.read_at = timezone.now()
             self.save(update_fields=["status", "read_at"])
@@ -296,6 +297,7 @@ class Notification(AbstractBaseModel):
     def mark_as_actioned(self, actioned_by, action_notes=""):
         """Mark notification as actioned."""
         from django.utils import timezone
+
         self.status = self.Status.ACTIONED
         self.actioned_by = actioned_by
         self.actioned_at = timezone.now()

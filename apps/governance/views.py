@@ -1,6 +1,8 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 
 from apps.core.permissions import (
     IsAuthenticatedReadOnly,
@@ -27,14 +29,15 @@ from apps.governance.serializers import (
     OathRecordSerializer,
     SubCommitteeSerializer,
 )
+from apps.members.models import Household, Member
 
 
 class CommitteeMemberViewSet(viewsets.ModelViewSet):
-    queryset = CommitteeMember.objects.select_related("member").prefetch_related("subcommittees")
+    queryset = CommitteeMember.objects.prefetch_related("subcommittees")
     serializer_class = CommitteeMemberSerializer
     permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["position", "status", "term_start", "term_end"]
-    search_fields = ["member__full_name", "position"]
+    search_fields = ["member_object__household_head_name", "member_object__full_name", "position"]
 
     def get_permissions(self):
         """
@@ -46,6 +49,55 @@ class CommitteeMemberViewSet(viewsets.ModelViewSet):
             return [IsChair()]
         # Read operations allow broader audience
         return [permission() for permission in self.permission_classes]
+
+    @action(detail=False, methods=["get"])
+    def search_members(self, request):
+        """
+        Search for members across both Household and Member models.
+        Query parameters:
+        - q: search query (searches english_name and member full_name_en)
+        - type: 'household' | 'member' | 'all' (default: 'all')
+        - limit: max results (default: 10)
+        """
+        query = request.query_params.get("q", "").strip()
+        member_type = request.query_params.get("type", "all")
+        limit = int(request.query_params.get("limit", 10))
+
+        results = []
+
+        if member_type in ["household", "all"]:
+            households = Household.objects.filter(english_name__icontains=query)[:limit]
+            results.extend(
+                [
+                    {
+                        "id": h.id,
+                        "name": h.english_name,
+                        "type": "household",
+                        "content_type": "household",
+                        "object_id": h.id,
+                        "tole": h.tole,
+                    }
+                    for h in households
+                ]
+            )
+
+        if member_type in ["member", "all"]:
+            members = Member.objects.filter(full_name_en__icontains=query).select_related("household")[:limit]
+            results.extend(
+                [
+                    {
+                        "id": m.id,
+                        "name": m.full_name_en,
+                        "type": "member",
+                        "content_type": "member",
+                        "object_id": m.id,
+                        "household_name": m.household.english_name,
+                    }
+                    for m in members
+                ]
+            )
+
+        return Response(results)
 
     @action(detail=False, methods=["get"])
     def quota_status(self, request):
@@ -69,7 +121,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
 
 
 class SubCommitteeViewSet(viewsets.ModelViewSet):
-    queryset = SubCommittee.objects.prefetch_related("committee_members__member")
+    queryset = SubCommittee.objects.prefetch_related("committee_members")
     serializer_class = SubCommitteeSerializer
     permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["name"]
@@ -79,8 +131,10 @@ class SubCommitteeViewSet(viewsets.ModelViewSet):
         if user.is_sub_committee_user():
             member = getattr(user, "member_profile", None)
             if member:
+                # Get CommitteeMember records for this user where content_type is Member
+                member_ct = ContentType.objects.get_for_model(Member)
                 committee_member = CommitteeMember.objects.filter(
-                    member=member, status=CommitteeMember.Status.ACTIVE
+                    content_type=member_ct, object_id=member.id, status=CommitteeMember.Status.ACTIVE
                 ).first()
                 if committee_member:
                     return self.queryset.filter(committee_members=committee_member)
@@ -88,14 +142,14 @@ class SubCommitteeViewSet(viewsets.ModelViewSet):
 
 
 class OathRecordViewSet(viewsets.ModelViewSet):
-    queryset = OathRecord.objects.select_related("committee_member__member")
+    queryset = OathRecord.objects.select_related("committee_member")
     serializer_class = OathRecordSerializer
     permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["oath_date"]
 
 
 class NoConfidenceMotionViewSet(viewsets.ModelViewSet):
-    queryset = NoConfidenceMotion.objects.select_related("target_committee_member__member")
+    queryset = NoConfidenceMotion.objects.select_related("target_committee_member")
     serializer_class = NoConfidenceMotionSerializer
     permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["target_type", "assembly_decision"]
