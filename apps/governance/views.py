@@ -2,7 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value, CharField
 
 from apps.core.permissions import (
     IsAuthenticatedReadOnly,
@@ -38,6 +38,25 @@ class CommitteeMemberViewSet(viewsets.ModelViewSet):
     permission_classes = [IsCommitteeChair | IsMember | IsSubCommitteeMember | IsAuthenticatedReadOnly]
     filterset_fields = ["position", "status", "term_start", "term_end"]
     search_fields = ["member_object__household_head_name", "member_object__full_name", "position"]
+
+    def get_queryset(self):
+        """
+        Order committee members by position hierarchy:
+        chair, vice_chair, secretary, joint_secretary, treasurer, member
+        """
+        queryset = super().get_queryset()
+        
+        position_order = Case(
+            When(position='chair', then=Value(0)),
+            When(position='vice_chair', then=Value(1)),
+            When(position='secretary', then=Value(2)),
+            When(position='joint_secretary', then=Value(3)),
+            When(position='treasurer', then=Value(4)),
+            When(position='member', then=Value(5)),
+            output_field=CharField(),
+        )
+        
+        return queryset.annotate(position_order=position_order).order_by('position_order', '-term_start')
 
     def get_permissions(self):
         """
