@@ -19,6 +19,8 @@ from apps.governance.models import (
     NoConfidenceMotion,
     OathRecord,
     SubCommittee,
+    Program,
+    ProgramImage,
 )
 from apps.governance.serializers import (
     CandidateSerializer,
@@ -27,7 +29,9 @@ from apps.governance.serializers import (
     HandoverRecordSerializer,
     NoConfidenceMotionSerializer,
     OathRecordSerializer,
+    ProgramSerializer,
     SubCommitteeSerializer,
+    ProgramImageSerializer,
 )
 from apps.members.models import Household, Member
 
@@ -45,18 +49,18 @@ class CommitteeMemberViewSet(viewsets.ModelViewSet):
         chair, vice_chair, secretary, joint_secretary, treasurer, member
         """
         queryset = super().get_queryset()
-        
+
         position_order = Case(
-            When(position='chair', then=Value(0)),
-            When(position='vice_chair', then=Value(1)),
-            When(position='secretary', then=Value(2)),
-            When(position='joint_secretary', then=Value(3)),
-            When(position='treasurer', then=Value(4)),
-            When(position='member', then=Value(5)),
+            When(position="chair", then=Value(0)),
+            When(position="vice_chair", then=Value(1)),
+            When(position="secretary", then=Value(2)),
+            When(position="joint_secretary", then=Value(3)),
+            When(position="treasurer", then=Value(4)),
+            When(position="member", then=Value(5)),
             output_field=CharField(),
         )
-        
-        return queryset.annotate(position_order=position_order).order_by('position_order', '-term_start')
+
+        return queryset.annotate(position_order=position_order).order_by("position_order", "-term_start")
 
     def get_permissions(self):
         """
@@ -181,3 +185,16 @@ class HandoverRecordViewSet(viewsets.ModelViewSet):
     serializer_class = HandoverRecordSerializer
     permission_classes = [IsCommitteeChair]
     filterset_fields = ["status", "deadline_date"]
+
+
+class ProgramViewSet(viewsets.ModelViewSet):
+    queryset = Program.objects.all().prefetch_related("images")
+    serializer_class = ProgramSerializer
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
+    filterset_fields = ["title", "date"]
+
+
+class ProgramImageViewSet(viewsets.ModelViewSet):
+    queryset = ProgramImage.objects.select_related("program")
+    serializer_class = ProgramImageSerializer
+    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]

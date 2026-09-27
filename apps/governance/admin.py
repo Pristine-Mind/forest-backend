@@ -10,6 +10,8 @@ from apps.governance.models import (
     NoConfidenceMotion,
     OathRecord,
     SubCommittee,
+    Program,
+    ProgramImage,
 )
 from apps.members.models import Household, Member
 
@@ -119,3 +121,58 @@ class NoConfidenceMotionAdmin(admin.ModelAdmin):
 class HandoverRecordAdmin(admin.ModelAdmin):
     list_display = ["outgoing_committee_member", "incoming_committee_member", "deadline_date", "status"]
     list_filter = ["status"]
+
+
+from django.contrib import admin
+from django.utils.html import format_html
+from .models import Program, ProgramImage
+
+
+class ProgramImageInline(admin.TabularInline):
+    model = ProgramImage
+    extra = 1
+    fields = ["image", "image_preview", "caption", "order"]
+    readonly_fields = ["image_preview"]
+    ordering = ["order"]
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="height: 60px; border-radius: 4px;" />',
+                obj.image.url,
+            )
+        return "—"
+
+    image_preview.short_description = "Preview"
+
+
+@admin.register(Program)
+class ProgramAdmin(admin.ModelAdmin):
+    list_display = ["title", "date", "image_count", "created_at"]
+    list_filter = ["date"]
+    search_fields = ["title", "description"]
+    date_hierarchy = "date"
+    inlines = [ProgramImageInline]
+
+    def image_count(self, obj):
+        return obj.images.count()
+
+    image_count.short_description = "Images"
+
+
+@admin.register(ProgramImage)
+class ProgramImageAdmin(admin.ModelAdmin):
+    list_display = ["program", "caption", "order", "image_preview"]
+    list_filter = ["program"]
+    search_fields = ["caption", "program__title"]
+    ordering = ["program", "order"]
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="height: 40px; border-radius: 4px;" />',
+                obj.image.url,
+            )
+        return "—"
+
+    image_preview.short_description = "Preview"
