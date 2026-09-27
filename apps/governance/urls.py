@@ -8,6 +8,8 @@ from apps.governance.views import (
     HandoverRecordViewSet,
     NoConfidenceMotionViewSet,
     OathRecordViewSet,
+    ProgramViewSet,
+    ProgramImageViewSet,
     SubCommitteeViewSet,
 )
 
@@ -19,6 +21,9 @@ router.register(r"subcommittees", SubCommitteeViewSet)
 router.register(r"oath-records", OathRecordViewSet)
 router.register(r"no-confidence-motions", NoConfidenceMotionViewSet)
 router.register(r"handover-records", HandoverRecordViewSet)
+router.register(r"programs", ProgramViewSet)
+router.register(r"program-images", ProgramImageViewSet)
+
 
 urlpatterns = [
     path("", include(router.urls)),

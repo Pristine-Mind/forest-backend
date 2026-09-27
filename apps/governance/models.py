@@ -8,6 +8,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import AbstractBaseModel
+from apps.members.models import Household, Member
 
 
 class CommitteeMember(AbstractBaseModel):
@@ -83,6 +84,15 @@ class CommitteeMember(AbstractBaseModel):
             raise ValidationError(
                 {"content_type": f"Can only link to Household or Member models, not {self.content_type.model}"}
             )
+
+    def member_photo(self, request=None) -> str:
+        obj = self.member_object
+        if obj is None:
+            return ""
+        photo = getattr(obj, "member_photo", None) or getattr(obj, "photo", None)
+        if not photo:
+            return ""
+        return request.build_absolute_uri(photo.url) if request else photo.url
 
 
 class Election(AbstractBaseModel):
@@ -229,3 +239,35 @@ class HandoverRecord(AbstractBaseModel):
 
     def __str__(self) -> str:
         return f"Handover from {self.outgoing_committee_member}"
+
+
+class Program(AbstractBaseModel):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    date = models.DateField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class ProgramImage(AbstractBaseModel):
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name="images")
+    image = models.FileField(upload_to="programs/")
+    caption = models.CharField(max_length=255, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self) -> str:
+        return f"Image for {self.program.title}"
+
+    def get_image_url(self, request=None) -> str:
+        if not self.image:
+            return ""
+        return request.build_absolute_uri(self.image.url) if request else self.image.url

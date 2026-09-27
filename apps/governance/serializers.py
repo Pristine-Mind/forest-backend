@@ -1,4 +1,4 @@
-from rest_framework import serializers
+from rest_framework import request, serializers
 from django.contrib.contenttypes.models import ContentType
 
 from apps.governance.models import (
@@ -8,6 +8,8 @@ from apps.governance.models import (
     HandoverRecord,
     NoConfidenceMotion,
     OathRecord,
+    Program,
+    ProgramImage,
     SubCommittee,
 )
 from apps.members.models import Household, Member
@@ -18,6 +20,7 @@ class CommitteeMemberSerializer(serializers.ModelSerializer):
     member_type = serializers.SerializerMethodField()
     subcommittee_names = serializers.SerializerMethodField()
     content_type = serializers.CharField(write_only=True, required=False)  # Accept string on write
+    member_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = CommitteeMember
@@ -38,8 +41,17 @@ class CommitteeMemberSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "photo",
+            "member_photo",
         ]
-        read_only_fields = ["id", "member_name", "member_type", "subcommittee_names", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "member_name",
+            "member_type",
+            "subcommittee_names",
+            "member_photo",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_member_name(self, obj):
         return obj.get_member_name()
@@ -52,6 +64,10 @@ class CommitteeMemberSerializer(serializers.ModelSerializer):
 
     def get_subcommittee_names(self, obj):
         return [sc.get_name_display() for sc in obj.subcommittees.all()]
+
+    def get_member_photo(self, obj):
+        request = self.context.get("request")
+        return obj.member_photo(request)
 
     def _resolve_content_type(self, model_name):
         """
@@ -202,3 +218,46 @@ class HandoverRecordSerializer(serializers.ModelSerializer):
         if obj.incoming_committee_member:
             return obj.incoming_committee_member.get_member_name()
         return None
+
+
+class ProgramImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProgramImage
+        fields = ["id", "program", "image", "image_url", "caption", "order"]
+        extra_kwargs = {"image": {"write_only": True, "required": False}}
+
+    def get_image_url(self, obj):
+        request = self.context.get("request")
+        return obj.get_image_url(request)
+
+
+class ProgramSerializer(serializers.ModelSerializer):
+    images = ProgramImageSerializer(many=True, required=False)
+
+    class Meta:
+        model = Program
+        fields = ["id", "title", "description", "date", "created_at", "images"]
+
+    def create(self, validated_data):
+        images_data = validated_data.pop("images", [])
+        program = Program.objects.create(**validated_data)
+        for image_data in images_data:
+            ProgramImage.objects.create(program=program, **image_data)
+        return program
+
+    def update(self, instance, validated_data):
+        images_data = validated_data.pop("images", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if images_data is not None:
+            # Replace existing images with the new set
+            instance.images.all().delete()
+            for image_data in images_data:
+                ProgramImage.objects.create(program=instance, **image_data)
+
+        return instance
