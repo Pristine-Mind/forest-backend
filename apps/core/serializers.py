@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from apps.core.models import SystemConfig, User
+from django.contrib.auth import password_validation
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 
 class LoginSerializer(serializers.Serializer):
@@ -100,3 +102,35 @@ class SystemConfigSerializer(serializers.ModelSerializer):
             "min_female_committee_members",
             "min_dalit_or_minority_committee_members",
         ]
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_old_password(self, value):
+        user = self.context["request"].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."}
+            )
+        if attrs["new_password"] == attrs["old_password"]:
+            raise serializers.ValidationError(
+                {"new_password": "New password must be different from the current one."}
+            )
+
+        # Runs the validators from AUTH_PASSWORD_VALIDATORS in settings.py
+        try:
+            password_validation.validate_password(attrs["new_password"], user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"new_password": list(e.messages)})
+
+        return attrs

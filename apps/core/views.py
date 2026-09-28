@@ -3,6 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.core.models import SystemConfig, User
 from apps.core.permissions import IsCommitteeChair
@@ -11,6 +12,7 @@ from apps.core.serializers import (
     SystemConfigSerializer,
     UserCreateSerializer,
     UserSerializer,
+    ChangePasswordSerializer,
 )
 
 
@@ -71,5 +73,29 @@ class AuthViewSet(viewsets.ViewSet):
         Token.objects.filter(user=request.user).delete()
         return Response(
             {"detail": "Successfully logged out."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password"])
+
+        # Invalidate the old token and issue a new one so other sessions are
+        # logged out, while this client stays logged in.
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
+
+        return Response(
+            {"detail": "Password changed successfully.", "token": token.key},
             status=status.HTTP_200_OK,
         )
