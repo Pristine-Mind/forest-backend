@@ -54,8 +54,8 @@ class CommitteeMemberViewSet(viewsets.ModelViewSet):
             When(position="chair", then=Value(0)),
             When(position="vice_chair", then=Value(1)),
             When(position="secretary", then=Value(2)),
-            When(position="joint_secretary", then=Value(3)),
-            When(position="treasurer", then=Value(4)),
+            When(position="joint_secretary", then=Value(4)),
+            When(position="treasurer", then=Value(3)),
             When(position="member", then=Value(5)),
             output_field=CharField(),
         )

@@ -71,6 +71,7 @@ class Household(AbstractBaseModel):
     photo = models.FileField(upload_to="household_head_photos/", blank=True, null=True)
     contact_number = models.CharField(max_length=32, blank=True, null=True)
     membership_number = models.CharField(max_length=64, blank=True, null=True)
+    email = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         ordering = ["household_head_name"]

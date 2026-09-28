@@ -127,7 +127,7 @@ def generate_receipt_pdf(receipt):
     Expected `receipt` fields (with graceful fallbacks via getattr so this
     doesn't break if a field isn't on the model yet):
         receipt_no        (str/int)  - serial number printed in the box, e.g. "618"
-        registration_no    (str)      - "दर्ता नं." value, e.g. "२६४"
+        registration_no    (str)      - "दर्ता नं." value, e.g. "२३४"
         issued_date        (date)     - receipt date
         customer_name      (str)      - "...को नाम" — person/party the receipt is issued to
         amount             (Decimal)  - total amount (used for the जम्मा रकम row

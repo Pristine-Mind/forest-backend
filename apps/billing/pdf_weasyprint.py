@@ -13,6 +13,27 @@ FONT_REGULAR = os.path.join(FONT_DIR, "NotoSansDevanagari-Regular.ttf")
 FONT_BOLD = os.path.join(FONT_DIR, "NotoSansDevanagari-Bold.ttf")
 
 
+_NEPALI_DIGITS = str.maketrans("0123456789", "०१२३४५६७८९")
+
+
+def to_nepali_date_str(d):
+    if not d:
+        return ""
+    try:
+        import nepali_datetime
+
+        bs = nepali_datetime.date.from_datetime_date(d)
+        return f"{bs.year:04d}/{bs.month:02d}/{bs.day:02d}".translate(_NEPALI_DIGITS)
+    except Exception:
+        return d.strftime("%d/%m/%Y")
+
+
+def to_nepali_datetime_str(dt):
+    date_part = to_nepali_date_str(dt.date())
+    time_part = dt.strftime("%H:%M:%S").translate(_NEPALI_DIGITS)
+    return f"{date_part} {time_part}"
+
+
 def generate_receipt_pdf_weasyprint(receipt):
     try:
         from weasyprint import HTML, CSS
@@ -23,10 +44,16 @@ def generate_receipt_pdf_weasyprint(receipt):
         return generate_receipt_pdf(receipt)
 
     # Get receipt data
+    from django.utils import timezone
+
+    generated_at = timezone.now()
+    if timezone.is_aware(generated_at):
+        generated_at = timezone.localtime(generated_at)
+    generated_on_str = to_nepali_datetime_str(generated_at)
     receipt_no = getattr(receipt, "receipt_no", "")
     registration_no = getattr(receipt, "registration_no", "२६४")
     issued_date = getattr(receipt, "issued_date", None)
-    issued_date_str = issued_date.strftime("%d/%m/%Y") if issued_date else ""
+    issued_date_str = to_nepali_date_str(issued_date)
     customer_name = getattr(receipt, "customer_name", "") or ""
     amount = getattr(receipt, "amount", 0) or 0
     amount_in_words = getattr(receipt, "amount_in_words", "") or ""
@@ -108,6 +135,11 @@ def generate_receipt_pdf_weasyprint(receipt):
         <style>
             {font_face_css}
 
+            @page {{
+                size: 210mm 88mm;    /* width of A4 x height fitted to the receipt */
+                margin: 4mm;
+            }}
+
             * {{
                 margin: 0;
                 padding: 0;
@@ -116,37 +148,34 @@ def generate_receipt_pdf_weasyprint(receipt):
 
             body {{
                 font-family: 'NotoDevanagari', 'Noto Sans Devanagari', 'Noto Sans', Arial, sans-serif;
-                font-size: 11pt;
-                line-height: 1.4;
-                padding: 20px;
-                background-color: white;
+                font-size: 7.5pt;
+                line-height: 1.25;
+                background: white;
                 color: black;
             }}
 
             .receipt {{
-                max-width: 210mm;
-                margin: 0 auto;
-                background: white;
                 border: 1px solid #ccc;
-                padding: 20px;
+                padding: 5px 8px;
+                page-break-inside: avoid;
             }}
 
             .header {{
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                margin-bottom: 20px;
+                margin-bottom: 5px;
                 border-bottom: 1px solid #000;
-                padding-bottom: 10px;
+                padding-bottom: 4px;
             }}
 
             .receipt-no {{
-                border: 2px solid black;
-                padding: 8px 12px;
-                font-size: 14pt;
+                border: 1.5px solid black;
+                padding: 2px 6px;
+                font-size: 10pt;
                 font-weight: bold;
                 text-align: center;
-                min-width: 50px;
+                min-width: 32px;
             }}
 
             .org-info {{
@@ -155,43 +184,43 @@ def generate_receipt_pdf_weasyprint(receipt):
             }}
 
             .org-name {{
-                font-size: 14pt;
+                font-size: 10pt;
                 font-weight: bold;
-                margin-bottom: 3px;
+                margin-bottom: 1px;
             }}
 
             .org-address {{
-                font-size: 10pt;
+                font-size: 6.5pt;
                 color: #333;
             }}
 
             .registration {{
                 text-align: right;
-                font-size: 10pt;
+                font-size: 6.5pt;
             }}
 
             .registration-item {{
-                margin-bottom: 3px;
+                margin-bottom: 1px;
             }}
 
             .title {{
                 text-align: center;
-                font-size: 13pt;
+                font-size: 9pt;
                 font-weight: bold;
-                margin: 15px 0;
+                margin: 4px 0;
             }}
 
             .field-line {{
                 display: flex;
-                margin-bottom: 12px;
+                margin-bottom: 4px;
                 border-bottom: 1px solid #000;
-                padding-bottom: 3px;
+                padding-bottom: 1px;
             }}
 
             .field-label {{
-                flex: 0 0 70px;
+                flex: 0 0 60px;
                 text-align: right;
-                margin-right: 10px;
+                margin-right: 6px;
             }}
 
             .field-value {{
@@ -201,12 +230,12 @@ def generate_receipt_pdf_weasyprint(receipt):
             table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin: 15px 0;
+                margin: 4px 0;
             }}
 
             th, td {{
                 border: 1px solid #000;
-                padding: 6px 8px;
+                padding: 2px 4px;
                 text-align: left;
             }}
 
@@ -214,35 +243,35 @@ def generate_receipt_pdf_weasyprint(receipt):
                 background-color: #f5f5f5;
                 font-weight: bold;
                 text-align: center;
-                font-size: 9pt;
-                padding: 8px 4px;
-                line-height: 1.3;
+                font-size: 6.5pt;
+                padding: 2px 3px;
+                line-height: 1.15;
             }}
 
             td {{
-                font-size: 10pt;
-                height: 24px;
+                font-size: 7.5pt;
+                height: 13px;
             }}
 
             .col-qty {{
                 text-align: center;
-                width: 60px;
+                width: 45px;
             }}
 
             .col-rate {{
                 text-align: center;
-                width: 60px;
+                width: 45px;
             }}
 
             .col-amount {{
                 text-align: center;
-                width: 80px;
+                width: 65px;
             }}
 
             .total-row {{
                 font-weight: bold;
                 background-color: #f9f9f9;
-                height: 26px;
+                height: 14px;
             }}
 
             .total-row td:nth-child(3) {{
@@ -251,25 +280,19 @@ def generate_receipt_pdf_weasyprint(receipt):
 
             .amount-words {{
                 display: flex;
-                margin: 10px 0;
+                margin: 4px 0;
                 border-bottom: 1px solid #000;
-                padding-bottom: 3px;
+                padding-bottom: 1px;
             }}
 
             .amount-words-label {{
-                flex: 0 0 100px;
+                flex: 0 0 85px;
                 text-align: right;
-                margin-right: 10px;
+                margin-right: 6px;
             }}
 
             .amount-words-value {{
                 flex: 1;
-            }}
-
-            .signature-section {{
-                display: flex;
-                justify-content: space-between;
-                margin-top: 30px;
             }}
 
             .signature {{
@@ -279,22 +302,21 @@ def generate_receipt_pdf_weasyprint(receipt):
 
             .signature-line {{
                 border-top: 1px solid #000;
-                width: 150px;
-                margin: 30px auto 5px;
+                width: 110px;
+                margin: 12px auto 2px;
             }}
 
             .signature-text {{
-                font-size: 9pt;
-                margin-top: 3px;
+                font-size: 6.5pt;
             }}
 
             .footer {{
                 text-align: center;
-                font-size: 8pt;
+                font-size: 6pt;
                 color: #666;
-                margin-top: 20px;
+                margin-top: 5px;
                 border-top: 1px solid #ddd;
-                padding-top: 10px;
+                padding-top: 3px;
             }}
         </style>
     </head>
@@ -340,7 +362,6 @@ def generate_receipt_pdf_weasyprint(receipt):
                         <td>{remarks}</td>
                     </tr>
                     <tr><td colspan="5"></td></tr>
-                    <tr><td colspan="5"></td></tr>
                     <tr class="total-row">
                         <td colspan="2"></td>
                         <td style="text-align: right;">जम्मा रकम (Total)</td>
@@ -355,7 +376,7 @@ def generate_receipt_pdf_weasyprint(receipt):
                 <div class="amount-words-value">{amount_in_words}</div>
             </div>
 
-            <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+            <div style="margin-top: 6px; display: flex; justify-content: space-between;">
                 <div class="signature">
                     <div class="signature-line"></div>
                     <div class="signature-text">बुझाइनेको सही<br/>(Received by)</div>
@@ -367,7 +388,7 @@ def generate_receipt_pdf_weasyprint(receipt):
             </div>
 
             <div class="footer">
-                Generated on {datetime.now().strftime("%d %B %Y %H:%M:%S")} | ShivGanga Community Forest Management System
+                Generated on (उत्पन्न मिति): {generated_on_str} | ShivGanga Community Forest Management System
                 This is a system-generated receipt.
             </div>
         </div>
