@@ -256,7 +256,7 @@ class Receipt(AbstractBaseModel):
     def registration_no(self):
         """Get organization registration number."""
         # You can hardcode this or fetch from settings
-        return "२६४"  # Shivganga CFG registration number
+        return "२३४"  # Shivganga CFG registration number
 
     @property
     def amount_in_words(self):

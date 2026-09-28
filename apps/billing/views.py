@@ -4,17 +4,20 @@ from django.http import FileResponse, HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.utils import timezone
+
 
 from apps.billing.models import FeeCollection, Receipt
 from apps.billing.serializers import FeeCollectionSerializer, ReceiptSerializer
 from apps.billing.tasks import generate_receipt_pdf_task
 from apps.core.permissions import IsAuthenticatedReadOnly, IsCommitteeChair
+from rest_framework.permissions import IsAuthenticated
 
 
 class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Receipt.objects.all()
     serializer_class = ReceiptSerializer
-    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
+    permission_classes = [IsAuthenticatedReadOnly]
     filterset_fields = ["reference_type", "issued_date"]
     search_fields = ["receipt_no"]
     lookup_field = "receipt_no"
@@ -44,7 +47,7 @@ class ReceiptViewSet(viewsets.ReadOnlyModelViewSet):
 class FeeCollectionViewSet(viewsets.ModelViewSet):
     queryset = FeeCollection.objects.select_related("member")
     serializer_class = FeeCollectionSerializer
-    permission_classes = [IsCommitteeChair | IsAuthenticatedReadOnly]
+    permission_classes = [IsAuthenticated]
     filterset_fields = ["fee_type", "payment_status", "member"]
     search_fields = ["member__full_name", "member__household__citizenship_no"]
 
@@ -76,7 +79,7 @@ class FeeCollectionViewSet(viewsets.ModelViewSet):
                 reference_type=Receipt.ReferenceType.FEE_COLLECTION,
                 reference_id=fee_collection.id,
                 amount=fee_collection.amount_paid,
-                issued_date=date.today(),
+                issued_date=timezone.localtime(),
                 issued_by=request.user,
             )
             fee_collection.receipt_no = receipt

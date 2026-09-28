@@ -51,6 +51,7 @@ python-barcode = "*"
 beautifulsoup4 = "*"
 numpy = "*"
 scipy = "*"
+nepali-datetime = "*"
 geopy = "*"
 
 [tool.poetry.dev-dependencies]
