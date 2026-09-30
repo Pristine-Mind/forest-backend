@@ -17,6 +17,12 @@ _NEPALI_DIGITS = str.maketrans("0123456789", "०१२३४५६७८९")
 
 
 def to_nepali_date_str(d):
+    """Convert an AD date to a Bikram Sambat string in Devanagari digits,
+    e.g. date(2026, 9, 28) -> '२०८३/०६/११'.
+
+    Requires: pip install nepali-datetime
+    Falls back to the AD date if the package is missing or conversion fails.
+    """
     if not d:
         return ""
     try:
@@ -29,6 +35,8 @@ def to_nepali_date_str(d):
 
 
 def to_nepali_datetime_str(dt):
+    """Convert an AD datetime to 'BS-date HH:MM:SS' in Devanagari digits,
+    e.g. '२०८३/०६/११ १३:४३:१६'."""
     date_part = to_nepali_date_str(dt.date())
     time_part = dt.strftime("%H:%M:%S").translate(_NEPALI_DIGITS)
     return f"{date_part} {time_part}"
@@ -126,6 +134,83 @@ def generate_receipt_pdf_weasyprint(receipt):
             "Download NotoSansDevanagari-Regular.ttf / -Bold.ttf from Google Fonts."
         )
 
+    # The receipt body, built once and stamped onto the page twice (top and
+    # bottom half of one A4 sheet) so a staff member can cut it in half and
+    # give one copy to the customer and keep the other for records.
+    receipt_body = f"""
+            <div class="receipt">
+                <div class="header">
+                    <div class="receipt-no">{receipt_no}</div>
+                    <div class="org-info">
+                        <div class="org-name">श्री शिवगंगा सामुदायिक वन उपभोक्ता समूह</div>
+                        <div class="org-address">Shivganga Community Forest User Group</div>
+                        <div class="org-address">गौरीगंगा न.पा.-३, कुचैनी, कैलाली</div>
+                        <div class="org-address">Gauriganga Municipality-3, Kuchain, Kailali</div>
+                    </div>
+                    <div class="registration">
+                        <div class="registration-item"><strong>Registration No. (दर्ता नं.):</strong> {registration_no}</div>
+                        <div class="registration-item"><strong>Date (मिति):</strong> {issued_date_str}</div>
+                    </div>
+                </div>
+
+                <div class="title">नगदी रसिद (Receipt)</div>
+
+                <div class="field-line">
+                    <div class="field-label">Name (नाम):</div>
+                    <div class="field-value">{customer_name}</div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>विवरण<br/>(Description)</th>
+                            <th class="col-qty">परिमाण<br/>(Qty)</th>
+                            <th class="col-rate">दर<br/>(Rate)</th>
+                            <th class="col-amount">रकम<br/>(Amount)</th>
+                            <th>कैफियत<br/>(Remarks)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{description_text}</td>
+                            <td class="col-qty">{quantity}</td>
+                            <td class="col-rate">{rate}</td>
+                            <td class="col-amount">{amount:,.2f}</td>
+                            <td>{remarks}</td>
+                        </tr>
+                        <tr><td colspan="5"></td></tr>
+                        <tr class="total-row">
+                            <td colspan="2"></td>
+                            <td style="text-align: right;">जम्मा रकम (Total)</td>
+                            <td class="col-amount">{amount:,.2f}</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="amount-words">
+                    <div class="amount-words-label">अक्षरुपी रू (Amount in Words):</div>
+                    <div class="amount-words-value">{amount_in_words}</div>
+                </div>
+
+                <div style="margin-top: 6px; display: flex; justify-content: space-between;">
+                    <div class="signature">
+                        <div class="signature-line"></div>
+                        <div class="signature-text">बुझाइनेको सही<br/>(Received by)</div>
+                    </div>
+                    <div class="signature">
+                        <div class="signature-line"></div>
+                        <div class="signature-text">बुझिलिनेको सही<br/>(Issued by: {issued_by_name})</div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Generated on (उत्पन्न मिति): {generated_on_str} | ShivGanga Community Forest Management System
+                    This is a system-generated receipt.
+                </div>
+            </div>
+    """
+
     # Generate HTML
     html_content = f"""
     <!DOCTYPE html>
@@ -136,8 +221,8 @@ def generate_receipt_pdf_weasyprint(receipt):
             {font_face_css}
 
             @page {{
-                size: 210mm 88mm;    /* width of A4 x height fitted to the receipt */
-                margin: 4mm;
+                size: A4;
+                margin: 6mm;
             }}
 
             * {{
@@ -154,7 +239,36 @@ def generate_receipt_pdf_weasyprint(receipt):
                 color: black;
             }}
 
+            html, body {{
+                height: 100%;
+            }}
+
+            .page-wrap {{
+                page-break-inside: avoid;
+            }}
+
+            .copy {{
+                page-break-inside: avoid;
+            }}
+
+            .cut-line {{
+                border-top: 1px dashed #999;
+                text-align: center;
+                position: relative;
+                margin: 16mm 0;
+            }}
+
+            .cut-line span {{
+                position: relative;
+                top: -6px;
+                background: white;
+                padding: 0 6px;
+                font-size: 6.5pt;
+                color: #999;
+            }}
+
             .receipt {{
+                width: 100%;
                 border: 1px solid #ccc;
                 padding: 5px 8px;
                 page-break-inside: avoid;
@@ -321,75 +435,15 @@ def generate_receipt_pdf_weasyprint(receipt):
         </style>
     </head>
     <body>
-        <div class="receipt">
-            <div class="header">
-                <div class="receipt-no">{receipt_no}</div>
-                <div class="org-info">
-                    <div class="org-name">श्री शिवगंगा सामुदायिक वन उपभोक्ता समूह</div>
-                    <div class="org-address">Shivganga Community Forest User Group</div>
-                    <div class="org-address">गौरीगंगा न.पा.-३, कुचैनी, कैलाली</div>
-                    <div class="org-address">Gauriganga Municipality-3, Kuchain, Kailali</div>
-                </div>
-                <div class="registration">
-                    <div class="registration-item"><strong>Registration No. (दर्ता नं.):</strong> {registration_no}</div>
-                    <div class="registration-item"><strong>Date (मिति):</strong> {issued_date_str}</div>
-                </div>
+        <div class="page-wrap">
+            <div class="copy">
+                {receipt_body}
             </div>
 
-            <div class="title">नगदी रसिद (Receipt)</div>
+            <div class="cut-line"><span>✂ cut here</span></div>
 
-            <div class="field-line">
-                <div class="field-label">Name (नाम):</div>
-                <div class="field-value">{customer_name}</div>
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>विवरण<br/>(Description)</th>
-                        <th class="col-qty">परिमाण<br/>(Qty)</th>
-                        <th class="col-rate">दर<br/>(Rate)</th>
-                        <th class="col-amount">रकम<br/>(Amount)</th>
-                        <th>कैफियत<br/>(Remarks)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{description_text}</td>
-                        <td class="col-qty">{quantity}</td>
-                        <td class="col-rate">{rate}</td>
-                        <td class="col-amount">{amount:,.2f}</td>
-                        <td>{remarks}</td>
-                    </tr>
-                    <tr><td colspan="5"></td></tr>
-                    <tr class="total-row">
-                        <td colspan="2"></td>
-                        <td style="text-align: right;">जम्मा रकम (Total)</td>
-                        <td class="col-amount">{amount:,.2f}</td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="amount-words">
-                <div class="amount-words-label">अक्षरुपी रू (Amount in Words):</div>
-                <div class="amount-words-value">{amount_in_words}</div>
-            </div>
-
-            <div style="margin-top: 6px; display: flex; justify-content: space-between;">
-                <div class="signature">
-                    <div class="signature-line"></div>
-                    <div class="signature-text">बुझाइनेको सही<br/>(Received by)</div>
-                </div>
-                <div class="signature">
-                    <div class="signature-line"></div>
-                    <div class="signature-text">बुझिलिनेको सही<br/>(Issued by: {issued_by_name})</div>
-                </div>
-            </div>
-
-            <div class="footer">
-                Generated on (उत्पन्न मिति): {generated_on_str} | ShivGanga Community Forest Management System
-                This is a system-generated receipt.
+            <div class="copy">
+                {receipt_body}
             </div>
         </div>
     </body>
