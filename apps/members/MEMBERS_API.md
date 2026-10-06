@@ -47,6 +47,10 @@ Represents a household unit with membership and demographic information.
 - `entry_fee_type` (enum) - `new_household`, `split_household`
 - `entry_fee_due` (decimal, read-only) - Calculated based on entry fee type
 - `photo` (file, optional) - Household head photo
+- `approval_status` (enum, read-only) - `pending`, `approved`, or `rejected`
+- `approved_by` (integer, read-only) - Chair user ID when approved
+- `approved_at` (datetime, read-only) - Approval timestamp
+- `rejection_reason` (string, read-only) - Reason supplied by the chair when rejected
 - `created_at` (datetime, read-only)
 - `updated_at` (datetime, read-only)
 
@@ -147,7 +151,9 @@ GET /api/members/households/{id}/
 POST /api/members/households/
 ```
 
-**Permissions:** `IsCommitteeChair`
+**Permissions:** `IsCommitteeChair | IsMember | IsSubCommitteeMember | IsDFOViewer`
+
+Staff-created households start with `approval_status: "pending"` and notify committee chairs. Other household creations default to approved, and existing records are migrated as approved.
 
 **Request Body:**
 ```json
@@ -172,6 +178,31 @@ POST /api/members/households/
   "entry_fee_type": "new_household"
 }
 ```
+
+#### Approve Household Request
+```
+POST /api/members/households/{id}/approve/
+```
+
+**Permissions:** Committee chair only
+
+Approves a pending household request, records the chair and approval time, and marks its member-request notifications as actioned. Returns `400` if the household is not pending.
+
+#### Reject Household Request
+```
+POST /api/members/households/{id}/reject/
+```
+
+**Permissions:** Committee chair only
+
+**Optional request body:**
+```json
+{
+  "rejection_reason": "Missing supporting documents"
+}
+```
+
+Rejects a pending request without deleting the household, stores the reason, and marks its member-request notifications as actioned. Returns `400` if the household is not pending.
 
 #### Update Household
 ```

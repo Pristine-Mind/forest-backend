@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from apps.core.models import AuditLog, ReceiptSequence, SystemConfig, User
+from apps.core.models import AuditLog, ReceiptSequence, SystemConfig, User, Notification
 
 
 @admin.register(User)
@@ -47,3 +47,8 @@ class AuditLogAdmin(admin.ModelAdmin):
 @admin.register(ReceiptSequence)
 class ReceiptSequenceAdmin(admin.ModelAdmin):
     list_display = ["last_number"]
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    pass

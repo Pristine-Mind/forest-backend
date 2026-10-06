@@ -41,6 +41,11 @@ class Household(AbstractBaseModel):
         INACTIVE = "inactive", _("Inactive")
         CANCELLED = "cancelled", _("Cancelled")
 
+    class ApprovalStatus(models.TextChoices):
+        PENDING = "pending", _("Pending")
+        APPROVED = "approved", _("Approved")
+        REJECTED = "rejected", _("Rejected")
+
     household_head_name = models.CharField(max_length=255)
     english_name = models.CharField(max_length=255, blank=True, null=True)
     tole = models.CharField(max_length=255, blank=True)
@@ -72,6 +77,20 @@ class Household(AbstractBaseModel):
     contact_number = models.CharField(max_length=32, blank=True, null=True)
     membership_number = models.CharField(max_length=64, blank=True, null=True)
     email = models.CharField(max_length=255, blank=True, null=True)
+    approval_status = models.CharField(
+        max_length=16,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.APPROVED,
+    )
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_households",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
 
     class Meta:
         ordering = ["household_head_name"]

@@ -40,8 +40,21 @@ class HouseholdSerializer(serializers.ModelSerializer):
             "membership_number",
             "english_name",
             "email",
+            "approval_status",
+            "approved_by",
+            "approved_at",
+            "rejection_reason",
         ]
-        read_only_fields = ["id", "entry_fee_due", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "entry_fee_due",
+            "created_at",
+            "updated_at",
+            "approval_status",
+            "approved_by",
+            "approved_at",
+            "rejection_reason",
+        ]
 
 
 class MemberSerializer(serializers.ModelSerializer):
