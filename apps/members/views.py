@@ -1,11 +1,14 @@
+from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from apps.core.models import SystemConfig, User
+from apps.core.models import Notification, SystemConfig, User
 from apps.core.permissions import (
     IsCommitteeChair,
     IsDFOViewer,
@@ -52,7 +55,111 @@ class HouseholdViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(_member_filter_for_user(user))
 
     def perform_create(self, serializer):
-        serializer.save()
+        with transaction.atomic():
+            household = serializer.save(created_by=self.request.user, updated_by=self.request.user)
+            if not self.request.user.is_staff_user():
+                return
+
+            household.approval_status = Household.ApprovalStatus.PENDING
+            household.save(update_fields=["approval_status", "updated_at"])
+
+            description = (
+                f"{self.request.user.full_name} requested to add a new member "
+                f"for the household {household.household_head_name}."
+            )
+            for chair in User.objects.filter(role=User.Role.COMMITTEE_CHAIR):
+                Notification.objects.create(
+                    created_by=self.request.user,
+                    updated_by=self.request.user,
+                    recipient=chair,
+                    notification_type=Notification.Type.MEMBER_REQUEST,
+                    title=f"New Member Request: {household.household_head_name}",
+                    description=description,
+                    action_required=True,
+                    content_type="Household",
+                    object_id=household.pk,
+                )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeChair])
+    def approve(self, request, pk=None):
+        with transaction.atomic():
+            household = self._get_locked_household(request, pk)
+            if household.approval_status != Household.ApprovalStatus.PENDING:
+                return Response(
+                    {
+                        "detail": (
+                            "Can only approve pending household requests. "
+                            f"Current status: {household.approval_status}"
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            household.approval_status = Household.ApprovalStatus.APPROVED
+            household.approved_by = request.user
+            household.approved_at = timezone.now()
+            household.rejection_reason = ""
+            household.save(
+                user=request.user,
+                update_fields=[
+                    "approval_status",
+                    "approved_by",
+                    "approved_at",
+                    "rejection_reason",
+                    "updated_by",
+                    "updated_at",
+                ],
+            )
+            self._action_request_notifications(household, request.user, "Household request accepted.")
+
+        return Response(self.get_serializer(household).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsCommitteeChair])
+    def reject(self, request, pk=None):
+        rejection_reason = request.data.get("rejection_reason", "No reason provided")
+        with transaction.atomic():
+            household = self._get_locked_household(request, pk)
+            if household.approval_status != Household.ApprovalStatus.PENDING:
+                return Response(
+                    {
+                        "detail": (
+                            "Can only reject pending household requests. "
+                            f"Current status: {household.approval_status}"
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            household.approval_status = Household.ApprovalStatus.REJECTED
+            household.rejection_reason = rejection_reason
+            household.save(
+                user=request.user,
+                update_fields=["approval_status", "rejection_reason", "updated_by", "updated_at"],
+            )
+            self._action_request_notifications(
+                household,
+                request.user,
+                f"Household request rejected: {rejection_reason}",
+            )
+
+        return Response(self.get_serializer(household).data)
+
+    def _get_locked_household(self, request, pk):
+        queryset = self.filter_queryset(self.get_queryset()).select_for_update()
+        household = get_object_or_404(queryset, pk=pk)
+        self.check_object_permissions(request, household)
+        return household
+
+    @staticmethod
+    def _action_request_notifications(household, actioned_by, action_notes):
+        notifications = Notification.objects.filter(
+            content_type="Household",
+            object_id=household.pk,
+            notification_type=Notification.Type.MEMBER_REQUEST,
+            status__in=[Notification.Status.UNREAD, Notification.Status.READ],
+        )
+        for notification in notifications:
+            notification.mark_as_actioned(actioned_by, action_notes)
 
     def perform_update(self, serializer):
         serializer.save()
